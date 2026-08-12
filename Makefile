@@ -240,7 +240,7 @@ certify-snowflake:
 		echo "SKIP: no snowflake credentials (~/.config/rdlt/snowflake/certify.json)"; \
 		exit 0; \
 	fi; \
-	rev=$$(grep -A3 'name = "rdlt-certify"' Cargo.lock | grep '^source' | sed 's/.*rdlt.//; s/"//'); \
+	rev=$$(tools/locked-rdlt-rev.sh); \
 	cargo install --git https://github.com/rapidbyte-io/rdlt --rev "$$rev" rdlt-certify \
 		--features bin --debug --locked --root target/certify-install; \
 	cargo build -p rdlt-connector-snowflake --features bin-serve --bin rdlt-connector-snowflake; \

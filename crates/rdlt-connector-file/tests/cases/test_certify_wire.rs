@@ -29,20 +29,53 @@ fn workspace_root() -> PathBuf {
         .to_path_buf()
 }
 
+/// The announced refusal when NO revision is resolvable — the same
+/// posture as the suite's RDLT_BUILD_CONNECTOR_BINS discipline: loud,
+/// with instructions, never a bare expect-failure.
+const NO_LOCKED_REV: &str = "the rdlt-certify lock entry carries no git source — the \
+     two-checkout [patch] dev loop is active (an uncommitted .cargo/config.toml \
+     redirects the rdlt git dependencies to a local checkout, and cargo strips the \
+     source line from patched packages) and the workspace manifest pins no `rev`, \
+     so there is no locked revision to install the certifier from. The gate of \
+     record never runs patched: delete the patch, let cargo restore Cargo.lock, \
+     and run the suite again.";
+
 /// The rdlt revision the lockfile resolved — the certifier must be
 /// built from the SAME tree as the certify library the suites link.
+/// Under the README's two-checkout [patch] dev loop the lock entry
+/// loses its `source =` line; the fallback is a `rev` pinned on the
+/// workspace manifest's own git spec, and where neither names a
+/// revision the suite refuses with [`NO_LOCKED_REV`].
 fn locked_rdlt_rev(root: &Path) -> String {
     let lock = std::fs::read_to_string(root.join("Cargo.lock")).expect("Cargo.lock reads");
-    let mut lines = lines_after_package(&lock, "rdlt-certify");
-    let source = lines
-        .find(|line| line.starts_with("source = "))
-        .expect("the rdlt-certify lock entry carries a git source");
-    source
-        .rsplit_once('#')
-        .expect("a git source pins its revision after `#`")
-        .1
-        .trim_end_matches('"')
-        .to_owned()
+    let manifest = std::fs::read_to_string(root.join("Cargo.toml")).expect("Cargo.toml reads");
+    match resolve_locked_rev(&lock, &manifest) {
+        Ok(rev) => rev,
+        Err(message) => panic!("{message}"),
+    }
+}
+
+/// Pure resolution over the two documents' text, so the patched-lock
+/// arm is pinnable without patching this workspace.
+fn resolve_locked_rev(lock: &str, manifest: &str) -> Result<String, String> {
+    if let Some(source) =
+        lines_after_package(lock, "rdlt-certify").find(|line| line.starts_with("source = "))
+    {
+        return Ok(source
+            .rsplit_once('#')
+            .expect("a git source pins its revision after `#`")
+            .1
+            .trim_end_matches('"')
+            .to_owned());
+    }
+    let manifest_rev = manifest
+        .lines()
+        .find(|line| line.trim_start().starts_with("rdlt-certify"))
+        .and_then(|line| {
+            let (_, rest) = line.split_once("rev = \"")?;
+            rest.split_once('"').map(|(rev, _)| rev.to_owned())
+        });
+    manifest_rev.ok_or_else(|| NO_LOCKED_REV.to_owned())
 }
 
 /// The lines of the `[[package]]` block naming `name` — bounded at the
@@ -213,5 +246,46 @@ fn a_source_suite_skip_refuses_unless_acknowledged() {
     assert!(
         stdout.contains("SKIP S2"),
         "the skip still renders: {stdout}"
+    );
+}
+
+/// The three resolution arms of the locked-revision helper, pinned on
+/// document text: a locked git source wins; a [patch]-stripped lock
+/// falls back to a manifest `rev`; and neither refuses with the FULL
+/// announced message — the README's dev loop must meet instructions,
+/// not a bare expect-failure.
+#[test]
+fn the_locked_rev_resolves_or_refuses_with_the_announced_posture() {
+    let locked = "[[package]]\n\
+         name = \"rdlt-certify\"\n\
+         version = \"0.3.0\"\n\
+         source = \"git+https://github.com/rapidbyte-io/rdlt#0123456789abcdef\"\n\
+         [[package]]\n\
+         name = \"other\"\n\
+         source = \"registry+https://github.com/rust-lang/crates.io-index\"\n";
+    let bare_manifest = "[workspace.dependencies]\n\
+         rdlt-certify = { git = \"https://github.com/rapidbyte-io/rdlt\" }\n";
+    assert_eq!(
+        resolve_locked_rev(locked, bare_manifest).expect("a git source resolves"),
+        "0123456789abcdef"
+    );
+
+    // The [patch] dev loop: cargo rewrote the lock entry without a
+    // source line. A manifest that pins `rev` still answers…
+    let patched = "[[package]]\n\
+         name = \"rdlt-certify\"\n\
+         version = \"0.3.0\"\n\
+         [[package]]\n";
+    let pinned_manifest = "[workspace.dependencies]\n\
+         rdlt-certify = { git = \"https://github.com/rapidbyte-io/rdlt\", rev = \"feedc0de\" }\n";
+    assert_eq!(
+        resolve_locked_rev(patched, pinned_manifest).expect("a manifest rev resolves"),
+        "feedc0de"
+    );
+
+    // …and one that does not refuses with the full announced message.
+    assert_eq!(
+        resolve_locked_rev(patched, bare_manifest).expect_err("nothing to resolve"),
+        NO_LOCKED_REV
     );
 }
