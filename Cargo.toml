@@ -1,0 +1,145 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/rdlt-connector-sqlcore",
+    "crates/rdlt-connector-rest",
+    "crates/rdlt-connector-duckdb",
+    "crates/rdlt-connector-file",
+    "crates/rdlt-connector-iceberg",
+    "crates/rdlt-connector-oracle",
+    "crates/rdlt-connector-postgres",
+    "crates/rdlt-connector-snowflake",
+]
+
+[workspace.package]
+version = "0.3.0"
+edition = "2024"
+# MSRV floor. rust-toolchain.toml pins the exact build toolchain (1.96.0); this
+# is the minimum the workspace commits to supporting, inherited by every crate.
+rust-version = "1.96"
+license = "Apache-2.0"
+repository = "https://github.com/rapidbyte-io/rdlt-connectors"
+
+[workspace.dependencies]
+memchr = "2"
+# Internal crates (path deps; version for future publishing). The postgres
+# entry pins `default-features = false` exactly as rdlt's workspace table did:
+# consumers name the halves they use, and the bare `--features bin-serve` gate
+# spelling depends on this entry NOT enabling defaults for them.
+rdlt-connector-sqlcore = { path = "crates/rdlt-connector-sqlcore", version = "0.3.0" }
+rdlt-connector-rest = { path = "crates/rdlt-connector-rest", version = "0.3.0" }
+rdlt-connector-duckdb = { path = "crates/rdlt-connector-duckdb", version = "0.3.0" }
+rdlt-connector-file = { path = "crates/rdlt-connector-file", version = "0.3.0" }
+rdlt-connector-iceberg = { path = "crates/rdlt-connector-iceberg", version = "0.3.0" }
+rdlt-connector-oracle = { path = "crates/rdlt-connector-oracle", version = "0.3.0" }
+rdlt-connector-postgres = { path = "crates/rdlt-connector-postgres", version = "0.3.0", default-features = false }
+rdlt-connector-snowflake = { path = "crates/rdlt-connector-snowflake", version = "0.3.0" }
+
+# The engine-side crates, consumed FROM THE rdlt REPOSITORY by git — and the
+# `version` key is DELIBERATELY OMITTED on every entry (the 023 packaging
+# rule): a dependency carrying BOTH `git` and `version` publishes SUCCESSFULLY
+# with the git source silently stripped, shipping a crate that resolves the
+# registry instead; git-without-version makes `cargo publish` REFUSE, which is
+# the loud, safe form. tools/allowed-git-deps.toml records the arrangement and
+# the exit (the engine crates' own registry publish wave) that retires it.
+#
+# Local development against an rdlt checkout goes through an UNCOMMITTED
+# `.cargo/config.toml` patch — see README.md, "The two-checkout dev loop".
+rdlt-connector = { git = "https://github.com/rapidbyte-io/rdlt" }
+rdlt-connector-sdk = { git = "https://github.com/rapidbyte-io/rdlt" }
+rdlt-engine = { git = "https://github.com/rapidbyte-io/rdlt" }
+rdlt-testkit = { git = "https://github.com/rapidbyte-io/rdlt" }
+rdlt-runtime = { git = "https://github.com/rapidbyte-io/rdlt" }
+rdlt-certify = { git = "https://github.com/rapidbyte-io/rdlt" }
+rdlt = { git = "https://github.com/rapidbyte-io/rdlt" }
+
+# External pins, copied verbatim from rdlt's workspace table (044 seed) for
+# every dependency the member crates use — same majors, same feature lists,
+# so a moved crate compiles against the same tree it was gated on.
+
+# arrow-rs: single workspace-wide major (rdlt research.md R10). Pinned to the
+# major that duckdb-rs links — connectors receive `RecordBatch` through the
+# rdlt-connector re-export, so version identity across the workspace is a
+# correctness requirement, not a preference.
+arrow = "58.3"
+arrow-schema = "58.3"
+arrow-array = "58.3"
+arrow-select = "58.3"
+arrow-cast = "58.3"
+parquet = "58.3"
+
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "time", "fs", "macros", "process"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+async-trait = "0.1"
+thiserror = "2"
+tracing = "0.1"
+bytes = "1"
+blake3 = "1"
+chrono = { version = "0.4", default-features = false, features = ["std"] }
+glob = "0.3"
+csv = "1.4"
+flate2 = "1"
+zstd = "0.13"
+futures = "0.3"
+
+# Connectors
+object_store = { version = "0.12", features = ["aws"] }
+iceberg = "=0.10.0"
+iceberg-catalog-rest = "=0.10.0"
+iceberg-storage-opendal = { version = "=0.10.0", features = ["opendal-s3"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip"] }
+serde_yaml = "0.9"
+# Already in the tree via hyper (reqwest); a direct edge costs no new entry.
+httpdate = "1"
+duckdb = { version = "1", features = ["bundled", "appender-arrow"] }
+# Snowflake session protocol. Default features carry key-pair auth; the
+# interactive external-browser SSO flow is deliberately NOT enabled — an
+# embedded engine cannot open a browser.
+# Consumed from a FORK, pinned by revision, with NO `version` key — and that
+# omission is load-bearing, not stylistic. A dependency carrying BOTH a git
+# source and a version publishes SUCCESSFULLY with the git source silently
+# stripped: the shipped crate would resolve upstream (which has no PUT),
+# compile, and fail only at run time. Without the version, packaging refuses
+# instead. tools/allowed-git-deps.toml records the arrangement, the crates it
+# renders unpublishable, and the exit that retires it.
+snowflake-connector-rs = { git = "https://github.com/rapidbyte-io/snowflake-connector-rs.git", rev = "cd9ec04aa7ea65883f5b7bb2a5d6fb6dd0931be5", default-features = false, features = ["key-pair-auth", "put"] }
+tokio-postgres = { version = "0.7", features = ["with-chrono-0_4"] }
+tokio-postgres-rustls = "0.13"
+rustls = { version = "0.23", features = ["ring"] }
+rustls-pemfile = "2"
+rustls-native-certs = "0.8"
+schemars = "1"
+jsonschema = "0.48"
+
+# Dev / test
+proptest = "1"
+# iai-callgrind: the instruction-count bench library, pinned EXACTLY as in
+# rdlt — lib and runner must agree or counts skew. The pg iai bench target
+# moved here with its crate; the recorded baselines live in rdlt's history.
+iai-callgrind = "=0.16.1"
+wiremock = "0.6"
+testcontainers = "0.23"
+testcontainers-modules = { version = "0.11", features = ["postgres"] }
+tempfile = "3"
+rcgen = "0.13"
+# The server binaries' argument surface (`--role`, `--version`).
+clap = { version = "4", features = ["derive"] }
+
+# Copied verbatim from rdlt (adopted there 2026-07-25 from a recorded
+# four-arm sweep): fat LTO + one codegen unit. `make connector-bins` ships
+# release binaries onto PATH beside rdlt's CLI, and a connector built with
+# different codegen than the engine that spawns it would silently change the
+# measured shape.
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+dbg_macro = "warn"
+todo = "warn"

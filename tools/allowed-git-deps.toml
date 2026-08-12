@@ -1,0 +1,257 @@
+# Git dependencies this workspace knowingly carries, and what each costs.
+#
+# An entry is not permission — it is a RECORD, and `unpublishable` is a claim
+# tools/check-git-deps.sh verifies against the resolved dependency graph on
+# every `make lint`. A dependency that spreads to another crate fails the check
+# until the record is brought back into line.
+#
+# There is deliberately no entry shape for a dependency carrying both `git` and
+# `version`: that form publishes successfully with the git source stripped, so
+# it is refused outright rather than recorded.
+#
+# THE BLAST RADIUS IS THE WHOLE WORKSPACE, on every entry, by construction:
+# every connector's one normal rdlt dependency (the sdk, or rdlt-connector for
+# sqlcore) is a git dependency until the engine crates publish to the registry,
+# so every publishable member reaches a git source and none can publish today.
+# The check computes that set from the graph and each entry must record it.
+
+# ---------------------------------------------------------------------------
+# The engine-side crates, consumed from the rdlt repository by git while their
+# registry publish wave (owner-scheduled, recorded in rdlt) has not run.
+# ---------------------------------------------------------------------------
+
+[[allow]]
+dependency = "rdlt-connector"
+manifest   = "Cargo.toml"
+table      = "workspace.dependencies"
+git        = "https://github.com/rapidbyte-io/rdlt"
+
+reason = """
+The connector SPI. Not yet published to the registry: the engine crates'
+0.3.0 publish wave is separate, owner-scheduled work recorded in rdlt.
+Until it runs, this repository consumes the SPI from rdlt's main by git —
+version-less, so publishing refuses loudly rather than shipping a crate
+that silently resolves a registry version that does not exist.
+"""
+
+exit = """
+The rdlt workspace publishes its 0.3.0 wave; this entry then becomes a
+registry version (one line, `version = "0.3.0"`) and the record is deleted.
+"""
+
+unpublishable = [
+    "rdlt-connector-duckdb",
+    "rdlt-connector-file",
+    "rdlt-connector-iceberg",
+    "rdlt-connector-postgres",
+    "rdlt-connector-rest",
+    "rdlt-connector-snowflake",
+    "rdlt-connector-sqlcore",
+]
+
+[[allow]]
+dependency = "rdlt-connector-sdk"
+manifest   = "Cargo.toml"
+table      = "workspace.dependencies"
+git        = "https://github.com/rapidbyte-io/rdlt"
+
+reason = """
+The connector-builder framework — every connector's ONE normal rdlt
+dependency (the one-dependency rule). Consumed by git until rdlt's 0.3.0
+registry wave runs; see the rdlt-connector entry.
+"""
+
+exit = """
+The rdlt workspace publishes its 0.3.0 wave; this entry then becomes a
+registry version and the record is deleted.
+"""
+
+unpublishable = [
+    "rdlt-connector-duckdb",
+    "rdlt-connector-file",
+    "rdlt-connector-iceberg",
+    "rdlt-connector-postgres",
+    "rdlt-connector-rest",
+    "rdlt-connector-snowflake",
+    "rdlt-connector-sqlcore",
+]
+
+[[allow]]
+dependency = "rdlt-engine"
+manifest   = "Cargo.toml"
+table      = "workspace.dependencies"
+git        = "https://github.com/rapidbyte-io/rdlt"
+
+reason = """
+Dev-dependency of the connector suites (engine-driven ingestion cells).
+Dev edges never survive into a published manifest, so this entry blocks
+nothing by itself; it is recorded because the check records EVERY git
+dependency, and the workspace-table spelling is shared either way.
+"""
+
+exit = """
+The rdlt workspace publishes its 0.3.0 wave; this entry then becomes a
+registry version and the record is deleted.
+"""
+
+unpublishable = [
+    "rdlt-connector-duckdb",
+    "rdlt-connector-file",
+    "rdlt-connector-iceberg",
+    "rdlt-connector-postgres",
+    "rdlt-connector-rest",
+    "rdlt-connector-snowflake",
+    "rdlt-connector-sqlcore",
+]
+
+[[allow]]
+dependency = "rdlt-testkit"
+manifest   = "Cargo.toml"
+table      = "workspace.dependencies"
+git        = "https://github.com/rapidbyte-io/rdlt"
+
+reason = """
+The conformance kits and container fixtures. A dev-dependency everywhere
+except rdlt-connector-postgres, whose `fixtures` feature carries it as an
+OPTIONAL NORMAL dependency (other crates' tests reach the pg container
+fixtures through it) — that one normal edge participates in the publish
+block like the sdk's. Consumed by git until rdlt's 0.3.0 registry wave.
+"""
+
+exit = """
+The rdlt workspace publishes its 0.3.0 wave; this entry then becomes a
+registry version and the record is deleted.
+"""
+
+unpublishable = [
+    "rdlt-connector-duckdb",
+    "rdlt-connector-file",
+    "rdlt-connector-iceberg",
+    "rdlt-connector-postgres",
+    "rdlt-connector-rest",
+    "rdlt-connector-snowflake",
+    "rdlt-connector-sqlcore",
+]
+
+[[allow]]
+dependency = "rdlt-runtime"
+manifest   = "Cargo.toml"
+table      = "workspace.dependencies"
+git        = "https://github.com/rapidbyte-io/rdlt"
+
+reason = """
+The spawn suites' dial (dev-dependency only). `publish = false` in rdlt —
+its own wire-freeze record — so there is no registry exit until rdlt's
+publish wave covers the protocol trio; consumed by git meanwhile.
+"""
+
+exit = """
+rdlt's publish wave covers the runtime trio (an owner decision recorded
+there); this entry then becomes a registry version and the record is
+deleted.
+"""
+
+unpublishable = [
+    "rdlt-connector-duckdb",
+    "rdlt-connector-file",
+    "rdlt-connector-iceberg",
+    "rdlt-connector-postgres",
+    "rdlt-connector-rest",
+    "rdlt-connector-snowflake",
+    "rdlt-connector-sqlcore",
+]
+
+[[allow]]
+dependency = "rdlt-certify"
+manifest   = "Cargo.toml"
+table      = "workspace.dependencies"
+git        = "https://github.com/rapidbyte-io/rdlt"
+
+reason = """
+The certifier — the bar every connector here answers to (dev-dependency
+only; the certify-wire suites drive each built bin through the clause
+suites). `publish = false` in rdlt, same wire-freeze record as the
+runtime; consumed by git meanwhile.
+"""
+
+exit = """
+rdlt's publish wave covers the certifier (an owner decision recorded
+there); this entry then becomes a registry version and the record is
+deleted.
+"""
+
+unpublishable = [
+    "rdlt-connector-duckdb",
+    "rdlt-connector-file",
+    "rdlt-connector-iceberg",
+    "rdlt-connector-postgres",
+    "rdlt-connector-rest",
+    "rdlt-connector-snowflake",
+    "rdlt-connector-sqlcore",
+]
+
+[[allow]]
+dependency = "rdlt"
+manifest   = "Cargo.toml"
+table      = "workspace.dependencies"
+git        = "https://github.com/rapidbyte-io/rdlt"
+
+reason = """
+The facade, dev-dependency of the workspace-level examples gate alone: the
+examples parse through the real pipeline Spec gate and desugar table, which
+live in the facade. Consumed by git until rdlt's 0.3.0 registry wave.
+"""
+
+exit = """
+The rdlt workspace publishes its 0.3.0 wave; this entry then becomes a
+registry version and the record is deleted.
+"""
+
+unpublishable = [
+    "rdlt-connector-duckdb",
+    "rdlt-connector-file",
+    "rdlt-connector-iceberg",
+    "rdlt-connector-postgres",
+    "rdlt-connector-rest",
+    "rdlt-connector-snowflake",
+    "rdlt-connector-sqlcore",
+]
+
+# ---------------------------------------------------------------------------
+# The snowflake driver fork (moved here with its consumer, 044).
+# ---------------------------------------------------------------------------
+
+[[allow]]
+dependency = "snowflake-connector-rs"
+manifest   = "Cargo.toml"
+table      = "workspace.dependencies"
+git        = "https://github.com/rapidbyte-io/snowflake-connector-rs.git"
+rev        = "cd9ec04aa7ea65883f5b7bb2a5d6fb6dd0931be5"
+
+reason = """
+The published crate cannot upload a file to a stage: the SQL API refuses the
+statement (structured code 391911) and the crate exposes no raw-response escape
+hatch — verified in source during feature 022, which shipped two workarounds
+because of it. This fork implements the upload, and feature 023 makes it the
+connector's only ingestion path, deleting both workarounds. The capability
+exists nowhere else on crates.io.
+"""
+
+exit = """
+Either: the change is accepted upstream, and this becomes a registry version
+(one line, `version = "1.2"`); or the fork is published under its own name and
+consumed through cargo's `package =` rename, which needs ZERO source changes
+because every `use snowflake_connector_rs::...` keeps resolving. The upstream
+contribution opens once the fork has been validated in real use here — that
+sequencing is deliberate and recorded in rdlt's specs history (023).
+"""
+
+unpublishable = [
+    "rdlt-connector-duckdb",
+    "rdlt-connector-file",
+    "rdlt-connector-iceberg",
+    "rdlt-connector-postgres",
+    "rdlt-connector-rest",
+    "rdlt-connector-snowflake",
+    "rdlt-connector-sqlcore",
+]

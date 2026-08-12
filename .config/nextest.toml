@@ -1,0 +1,37 @@
+# Live container cells: each iceberg cell boots its own Polaris (JVM) +
+# RUSTFS pair. Unbounded parallelism starts 6+ JVMs at once and health
+# checks time out under the load — bound the group, everything else
+# keeps full parallelism. The whole package rides the group (offline
+# cells included — a scheduling simplification the membership pin in
+# tests/cases/test_gating.rs makes explicit).
+[test-groups.iceberg-live]
+max-threads = 3
+
+[[profile.default.overrides]]
+filter = "package(rdlt-connector-iceberg)"
+test-group = "iceberg-live"
+
+# Live container cells: every oracle cell boots its own Oracle
+# database, which is the heaviest fixture the gate has (~75 s to
+# readiness, and a real RAM footprint). Unbounded parallelism started
+# SIXTEEN of them at once and the machine thrashed — measured, not
+# feared. Bounding the group is the fix; nextest runs a process per
+# test, so no amount of in-process sharing can do it.
+[test-groups.oracle-live]
+max-threads = 3
+
+[[profile.default.overrides]]
+filter = "package(rdlt-connector-oracle)"
+test-group = "oracle-live"
+
+# The flake-recording profile (rdlt feature 020 US8, carried with the
+# suites that use it): retries classify intermittents as data rather
+# than judgement calls. Deliberately NOT the default profile — retries
+# in the gate would let a real intermittent bug pass as green. Opt-in
+# via `--profile flake`; the gate of record runs zero-retry.
+[profile.flake]
+retries = 2
+fail-fast = false
+
+[profile.flake.junit]
+path = "junit.xml"

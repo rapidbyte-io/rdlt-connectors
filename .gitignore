@@ -1,0 +1,26 @@
+/target
+**/*.rs.bk
+*.prof*
+.env*
+.DS_Store
+*.log
+.idea/
+.vscode/
+# rdlt runtime work directories (WAL etc.) from ad-hoc pipeline runs.
+.rdlt/
+/.rdlt*/
+/.tmp-real/
+# The two-checkout dev loop's LOCAL patch file (README.md): it redirects the
+# rdlt git dependencies at a sibling checkout, so committing it would make
+# every clone build against a path that exists on one machine.
+/.cargo/config.toml
+
+# Internal development records — the working memory of the project's
+# plan-driven process. They live on disk for local work and stay out of
+# the public repository.
+/specs/
+/CLAUDE.md
+/.claude/
+/.specify/
+/.superpowers/
+/docs/superpowers/
