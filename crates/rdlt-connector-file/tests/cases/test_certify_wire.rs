@@ -47,10 +47,7 @@ fn locked_rdlt_rev(root: &Path) -> String {
 
 /// The lines of the `[[package]]` block naming `name` — bounded at the
 /// next block so a later package's source can never answer.
-fn lines_after_package<'a>(
-    lock: &'a str,
-    name: &str,
-) -> impl Iterator<Item = &'a str> + use<'a> {
+fn lines_after_package<'a>(lock: &'a str, name: &str) -> impl Iterator<Item = &'a str> + use<'a> {
     let header = format!("name = \"{name}\"");
     lock.lines()
         .skip_while(move |line| *line != header)
