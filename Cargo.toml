@@ -9,6 +9,11 @@ members = [
     "crates/rdlt-connector-oracle",
     "crates/rdlt-connector-postgres",
     "crates/rdlt-connector-snowflake",
+    # Test-only, never published: the workspace-level gates (the examples'
+    # document-language property and the one-dependency rule). Named outside
+    # the `rdlt-connector-*` pattern so the dependency-rule test binds the
+    # connectors and never its own enforcer.
+    "crates/examples-gate",
 ]
 
 [workspace.package]

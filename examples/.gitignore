@@ -1,0 +1,6 @@
+# Run artifacts: the write-ahead log and the written data. Both are
+# reproducible by running the example, and neither belongs in git.
+.rdlt/
+out/
+*.duckdb
+*.duckdb.wal

@@ -1,0 +1,22 @@
+# A seeded PostgreSQL for the postgres-to-parquet example.
+#
+#   docker compose -f examples/postgres-to-parquet/compose.yaml up -d
+#   # or: podman-compose -f examples/postgres-to-parquet/compose.yaml up -d
+#
+# The image is the exact pin rdlt's own test suites run against.
+services:
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: rdlt
+      POSTGRES_PASSWORD: rdlt
+      POSTGRES_DB: shop
+    ports:
+      - "15432:5432"
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d:ro,z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rdlt -d shop"]
+      interval: 2s
+      timeout: 2s
+      retries: 30

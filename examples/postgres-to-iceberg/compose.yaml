@@ -1,0 +1,63 @@
+# Everything the postgres-to-iceberg example needs: a seeded
+# PostgreSQL source, an S3-compatible store (RUSTFS), an Apache
+# Polaris REST catalog, and a one-shot bootstrap that creates the
+# warehouse bucket, the catalog, and the grants.
+#
+#   docker compose -f examples/postgres-to-iceberg/compose.yaml up -d
+#   # or: podman-compose -f examples/postgres-to-iceberg/compose.yaml up -d
+#
+# Ready when `docker compose logs bootstrap` ends with
+# "polaris bootstrap complete". Images are the exact pins rdlt's own
+# iceberg suite runs against; Polaris is pinned by DIGEST because
+# upstream publishes no stable version tag.
+services:
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: rdlt
+      POSTGRES_PASSWORD: rdlt
+      POSTGRES_DB: shop
+    ports:
+      - "15434:5432"
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d:ro,z
+
+  rustfs:
+    image: docker.io/rustfs/rustfs:1.0.0-beta.11
+    environment:
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_ACCESS_KEY: ice-key
+      RUSTFS_SECRET_KEY: ice-secret
+    ports:
+      - "19000:9000"
+
+  polaris:
+    image: docker.io/apache/polaris@sha256:5b574ce52708e8402af2305e6e64a588af1a33e1cf5f106df4dcbd17852d706c
+    environment:
+      POLARIS_BOOTSTRAP_CREDENTIALS: "POLARIS,root,s3cr3t"
+      polaris.realm-context.realms: POLARIS
+      QUARKUS_HTTP_PORT: "8181"
+      QUARKUS_MANAGEMENT_PORT: "8182"
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ice-key
+      AWS_SECRET_ACCESS_KEY: ice-secret
+    ports:
+      - "18181:8181"
+
+  # One shot: waits for Polaris, creates the bucket + catalog +
+  # grants, prints "polaris bootstrap complete", exits.
+  bootstrap:
+    image: docker.io/library/python:3.12-alpine
+    depends_on:
+      - polaris
+      - rustfs
+    volumes:
+      - ./bootstrap.py:/bootstrap.py:ro,z
+    command: >
+      python /bootstrap.py
+      http://polaris:8181
+      http://127.0.0.1:19000
+      http://rustfs:9000
+      ice-key ice-secret root s3cr3t rdlt lake
+      http://rustfs:9000
+    restart: "no"

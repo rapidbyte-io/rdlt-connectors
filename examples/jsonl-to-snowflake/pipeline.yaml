@@ -1,0 +1,111 @@
+# Newline-delimited JSON files -> Snowflake, upserted by key.
+#
+#   rdlt run examples/jsonl-to-snowflake/pipeline.yaml
+#
+# The one example with no container: Snowflake is a service, so the
+# connection facts below are placeholders — EDIT account, user, auth,
+# database and schema for an account you can reach. This example is
+# THE reference for the snowflake DESTINATION vocabulary.
+pipeline: jsonl-to-snowflake
+
+workdir: examples/jsonl-to-snowflake/.rdlt
+
+# Merge upserts on the key; `append` and `replace` also work here.
+write_mode:
+  merge:
+    key: [id]
+
+source:
+  # File-source basics; jsonl-to-postgres is the full tour.
+  file:
+    streams:
+      - name: events
+        format: jsonl
+        path: examples/jsonl-to-snowflake/data/*.jsonl
+        primary_key: [id]
+        type_hints:
+          updated_at: timestamp_tz
+
+destination:
+  snowflake:
+    # The account identifier as it appears in the host name
+    # (`MYORG-MYACCT`) — not a URL, and not the full
+    # `.snowflakecomputing.com` host; both spellings are refused
+    # with a pointer here.
+    account: MYORG-MYACCT
+    user: RDLT_LOADER
+
+    # Exactly one auth method. Key-pair is the service's recommended
+    # one for automation:
+    auth:
+      key_pair:
+        # A path to the PKCS#8 key, or the inline PEM text.
+        private_key: ~/.config/rdlt/snowflake/rdlt_key.p8
+        # Required exactly when the key is encrypted.
+        # passphrase: change-me
+      # ... or interactive-style password (+ optional MFA passcode):
+      # password:
+      #   password: change-me
+      #   passcode: "123456"
+      # ... or a caller-supplied OAuth access token:
+      # oauth_token: eyJraWQiOi...
+      # ... or a programmatic access token:
+      # pat: sfp_ZW1...
+
+    # Statements are fully qualified, so both are required even when
+    # the account has server-side defaults.
+    database: ANALYTICS
+    schema: RAW
+
+    # Absent = the user's defaults.
+    warehouse: LOAD_WH
+    # role: RDLT_ROLE
+
+    # permanent (default; Time Travel + fail-safe) | transient (no
+    # fail-safe — applied to rdlt's own bookkeeping tables too).
+    # table_type: transient
+
+    # Session parameters, applied verbatim at connect.
+    # session_parameters:
+    #   TIMEZONE: UTC
+
+    # Tag rdlt's statements in the account's query history.
+    query_tag: rdlt-example
+
+    # Overrides the host derived from `account` — PrivateLink and
+    # similar deployments front the account under their own name.
+    # host: myorg-myacct.privatelink.snowflakecomputing.com
+
+    # Staged-part sizing — how large each uploaded parquet file
+    # grows. The 128 MiB default sits inside the service's own
+    # 100-250 MB guidance for load parallelism.
+    # parts:
+    #   target_bytes: 134217728
+    #   roll_after_seconds: 900
+    #   max_open_bytes: 536870912
+
+    # The shared SQL-destination options — the identical vocabulary
+    # every SQL destination takes (jsonl-to-postgres documents each
+    # option in prose): delete_insert | upsert | scd2.
+    # merge_strategy: delete_insert
+    # tables:
+    #   events:
+    #     merge_strategy: upsert
+    #     # CDC-style deletions: flagged rows DELETE their key
+    #     # instead of merging (boolean columns compare = TRUE,
+    #     # others IS NOT NULL). Not valid with scd2.
+    #     hard_delete: _rdlt_deleted
+    #     # In-load survivor selection; the order has NO default.
+    #     dedup_sort:
+    #       column: updated_at
+    #       order: desc
+    #     # A merge load REPLACES every scope value present in its
+    #     # rows ("reload these days"). NULL is not a scope.
+    #     merge_scope: [region]
+    #     # Full version history — only beside merge_strategy: scd2.
+    #     scd2:
+    #       valid_from: _rdlt_valid_from
+    #       valid_to: _rdlt_valid_to
+    #       absent: keep             # keep (default) | retire
+    #       active_record_timestamp: "9999-12-31T00:00:00Z"
+    #       boundary_timestamp: "2026-08-03T12:00:00Z"

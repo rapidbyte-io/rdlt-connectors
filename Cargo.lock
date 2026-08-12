@@ -1690,6 +1690,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "examples-gate"
+version = "0.3.0"
+dependencies = [
+ "rdlt",
+ "rdlt-connector-duckdb",
+ "rdlt-connector-file",
+ "rdlt-connector-iceberg",
+ "rdlt-connector-oracle",
+ "rdlt-connector-postgres",
+ "rdlt-connector-rest",
+ "rdlt-connector-sdk",
+ "rdlt-connector-snowflake",
+ "serde_json",
+ "serde_yaml",
+]
+
+[[package]]
 name = "expect-test"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3899,7 +3916,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03da047801ff44bb6a4d407d4860c05fd70bb81714e6b2f3812603d5b145b042"
 dependencies = [
  "heck",
- "itertools 0.14.0",
+ "itertools 0.13.0",
  "log",
  "multimap",
  "petgraph",
@@ -3920,7 +3937,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b570b25f7617e43d59005d0990ccb79e950a423952cea19671b7a876da390adf"
 dependencies = [
  "anyhow",
- "itertools 0.14.0",
+ "itertools 0.13.0",
  "proc-macro2",
  "quote",
  "syn 2.0.119",
@@ -4244,6 +4261,22 @@ dependencies = [
  "rustls-pki-types",
  "time",
  "yasna",
+]
+
+[[package]]
+name = "rdlt"
+version = "0.3.0"
+source = "git+https://github.com/rapidbyte-io/rdlt#360beea80b1af23e825d4f9e84308d341fe1460f"
+dependencies = [
+ "rdlt-connector",
+ "rdlt-connector-sdk",
+ "rdlt-core",
+ "rdlt-engine",
+ "rdlt-runtime",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tokio-util",
 ]
 
 [[package]]
@@ -6555,7 +6588,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]

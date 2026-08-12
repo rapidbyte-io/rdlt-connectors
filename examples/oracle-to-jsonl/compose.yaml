@@ -1,0 +1,29 @@
+# A seeded Oracle Free for the oracle-to-jsonl example.
+#
+#   docker compose -f examples/oracle-to-jsonl/compose.yaml up -d
+#   # or: podman-compose -f examples/oracle-to-jsonl/compose.yaml up -d
+#
+# First start takes a minute or two (the image initialises a
+# database); `docker compose ps` shows healthy when ready. The image
+# is the exact pin rdlt's own oracle suite runs against. NOTE the
+# database is containerised but the CLIENT library is not: rdlt still
+# needs Oracle Instant Client on the machine that runs the pipeline —
+# see the README.
+services:
+  oracle:
+    image: docker.io/gvenzl/oracle-free:23.26.2-slim-faststart
+    environment:
+      # SYS/SYSTEM password. The rdlt application user is created by
+      # the seed script itself — init scripts run BEFORE the image's
+      # own APP_USER machinery, so an APP_USER env here would arrive
+      # too late for the seed to use.
+      ORACLE_PASSWORD: rdlt-sys
+    ports:
+      - "11521:1521"
+    volumes:
+      - ./init:/container-entrypoint-initdb.d:ro,z
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 30

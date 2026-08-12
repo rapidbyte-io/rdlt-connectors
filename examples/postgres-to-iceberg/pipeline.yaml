@@ -1,0 +1,114 @@
+# PostgreSQL -> an Apache Iceberg table on an S3-compatible store,
+# through a REST catalog (Apache Polaris).
+#
+#   docker compose -f examples/postgres-to-iceberg/compose.yaml up -d
+#   # wait for `docker compose logs bootstrap` to say
+#   # "polaris bootstrap complete", then:
+#   rdlt run examples/postgres-to-iceberg/pipeline.yaml
+#
+# This example is THE reference for the iceberg DESTINATION
+# vocabulary. The source side shows postgres basics only —
+# postgres-to-parquet is its full tour.
+pipeline: postgres-to-iceberg
+
+workdir: examples/postgres-to-iceberg/.rdlt
+
+# Iceberg supports Append this release; Replace and Merge are typed
+# refusals, never silent narrowing. Re-running does not duplicate:
+# each commit's snapshot carries the (pipeline, load, commit)
+# identity, and a redelivered commit is recognised and skipped.
+write_mode: append
+
+source:
+  postgres:
+    conn: host=127.0.0.1 port=15434 user=rdlt password=rdlt dbname=shop
+    # Cursors make the re-run incremental: append + cursor reads only
+    # what changed, so running twice does not duplicate. (A replayed
+    # CRASHED commit is separately deduplicated by snapshot identity;
+    # a fresh run reading the same rows again is not a replay.)
+    tables:
+      - name: orders
+        cursor:
+          column: updated_at
+      - name: customers
+        cursor:
+          column: created_at
+
+destination:
+  iceberg:
+    catalog:
+      # The REST catalog root; must be http(s).
+      uri: http://127.0.0.1:18181/api/catalog
+      warehouse: rdlt
+
+      # Exactly one auth scheme:
+      auth:
+        oauth2_client_credentials:
+          # Absent token_url = the catalog's own token endpoint.
+          # token_url: http://127.0.0.1:18181/api/catalog/v1/oauth/tokens
+          client_id: root
+          client_secret: s3cr3t
+          scopes: [PRINCIPAL_ROLE:ALL]
+        # ... or a caller-supplied token:
+        # bearer:
+        #   token: eyJraWQiOi...
+
+      # Verbatim catalog properties, inserted LAST so they win over
+      # generated ones.
+      # props:
+      #   header.X-Iceberg-Access-Delegation: vended-credentials
+
+    # Dot-separated namespace levels.
+    namespace: raw
+    create_namespace: true
+
+    # Absent `storage` = the catalog VENDS scoped credentials per
+    # table — the default, and what this example uses. An explicit
+    # override bypasses vending:
+    # storage:
+    #   s3:
+    #     endpoint: http://127.0.0.1:19000
+    #     region: us-east-1
+    #     access_key: ice-key
+    #     secret_key: ice-secret
+    #     path_style: true
+
+    # Per-stream table options, keyed by the ENGINE'S NORMALIZED root
+    # table name (lower-cased, non-[a-z0-9_] mapped to _), not the
+    # raw stream name.
+    tables:
+      orders:
+        # The physical table name; absent = the stream name.
+        # name: orders_v2
+
+        # Partitioning, applied at CREATE (the spec is fixed there).
+        # Transforms: identity | year | month | day | hour |
+        # {bucket: N} | {truncate: W}.
+        partition_by:
+          - column: status
+            transform: identity
+        #   - column: updated_at
+        #     transform: day
+        #   - column: order_id
+        #     transform: {bucket: 16}
+
+    # Parquet tuning for the data files — the same block the file
+    # destination takes (postgres-to-parquet documents each field).
+    # parquet:
+    #   compression: zstd
+    #   compression_level: 3
+    #   dictionary_enabled: true
+    #   dictionary_page_size_limit: 65536
+    #   data_page_size_limit: 1048576
+    #   max_row_group_rows: 1048576
+
+    # Data-file sizing. `target_bytes` becomes the Iceberg table
+    # property `write.target-file-size-bytes`; note rdlt's default is
+    # 128 MiB, not the library's 512 MiB, so every rdlt destination
+    # writes the same size. `max_open_bytes` is satisfied trivially
+    # here — the library streams files out rather than accumulating
+    # them, so there is nothing for a memory ceiling to cap.
+    # parts:
+    #   target_bytes: 134217728
+    #   roll_after_seconds: 900
+    #   max_open_bytes: 536870912

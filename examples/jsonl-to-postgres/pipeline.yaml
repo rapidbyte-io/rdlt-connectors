@@ -1,0 +1,130 @@
+# Newline-delimited JSON files -> PostgreSQL, upserted by key.
+#
+#   docker compose -f examples/jsonl-to-postgres/compose.yaml up -d
+#   rdlt run examples/jsonl-to-postgres/pipeline.yaml
+#
+# This example is THE reference for the file SOURCE and the postgres
+# DESTINATION vocabularies — every option of both appears below — and
+# for `write_mode: merge`, which is why running it twice leaves 40
+# rows, not 80.
+pipeline: jsonl-to-postgres
+
+workdir: examples/jsonl-to-postgres/.rdlt
+
+# Merge upserts on the key, which must agree with the stream's
+# declared `primary_key`. The other modes are `append` and `replace`.
+write_mode:
+  merge:
+    key: [id]
+
+source:
+  # Inline; `file: <path>` is the separated-document form (the path
+  # resolves relative to this pipeline file's own directory).
+  file:
+    streams:
+      - name: events
+        # DECLARED, never inferred from the extension:
+        # jsonl | parquet | csv.
+        format: jsonl
+
+        # A path or a glob. A NAMED missing file is an error; an
+        # empty glob is an empty stream. Compression is per file BY
+        # EXTENSION (.gz, .zst) and verified against magic bytes, so
+        # a lying name fails loudly.
+        path: examples/jsonl-to-postgres/data/*.jsonl
+
+        # Row identity — REQUIRED here because merge needs a key.
+        # jsonl/csv only; parquet streams are structured and refuse
+        # a declared key.
+        primary_key: [id]
+
+        # Per-column parsing out of the closed hint table:
+        # bool int64 float64 utf8 timestamp_tz date time uuid json
+        type_hints:
+          updated_at: timestamp_tz
+        #   amount: float64
+
+        # Per-line JSON skim-validation (jsonl only; on by default).
+        # validate: true
+
+        # CSV shape — only beside `format: csv`; see csv-to-duckdb
+        # for it in action.
+        # csv:
+        #   delimiter: ","
+        #   header: true
+        #   quote: '"'
+
+        # Reading from an object store instead of the local
+        # filesystem (the same block the file destination takes):
+        # location:
+        #   s3:
+        #     endpoint: http://127.0.0.1:9000
+        #     bucket: landing
+        #     region: us-east-1
+        #     access_key: minioadmin
+        #     secret_key: minioadmin
+        #     path_style: true
+        #     unsigned_payload: false   # https-only when true
+
+destination:
+  postgres:
+    # libpq-style connection string or URL.
+    conn: host=127.0.0.1 port=15433 user=rdlt password=rdlt dbname=warehouse
+
+    # Target schema (the document vocabulary calls it `dataset`);
+    # created if missing.
+    dataset: raw
+
+    # TLS posture — same block and rules as the postgres source: the
+    # ladder is disable | prefer | require | verify_ca | verify_full,
+    # and the block may strengthen a conn-string sslmode, never
+    # weaken it.
+    # tls:
+    #   mode: verify_full
+    #   root_cert: /etc/ssl/certs/corp-root.pem
+    #   client_cert: /etc/rdlt/client.crt       # mTLS: both or neither
+    #   client_key: /etc/rdlt/client.key
+
+    # Destination-wide merge behaviour: delete_insert (the default,
+    # atomic delete-then-insert) | upsert (ON CONFLICT update; a
+    # unique index on the key is ensured) | scd2 (full version
+    # history). Setting a strategy under append/replace is refused
+    # rather than ignored.
+    # merge_strategy: delete_insert
+
+    # Per-table refinements, keyed by table name.
+    # tables:
+    #   events:
+    #     # Override the destination-wide strategy for one table.
+    #     merge_strategy: upsert
+    #
+    #     # CDC-style deletions: rows where this column is TRUE (for
+    #     # boolean columns; IS NOT NULL otherwise) DELETE their key
+    #     # instead of merging. Not valid with scd2.
+    #     hard_delete: _rdlt_deleted
+    #
+    #     # In-load survivor selection when one key arrives many
+    #     # times: order by a column, keep the least (asc) or the
+    #     # greatest (desc). No default order — it is load-bearing.
+    #     dedup_sort:
+    #       column: updated_at
+    #       order: desc
+    #
+    #     # Scope replacement: a merge load REPLACES every scope
+    #     # value present in its rows (think "reload these days").
+    #     # NULL is not a scope. Keyed tables only.
+    #     merge_scope: [region]
+    #
+    #     # Full version history instead of updates in place. Only
+    #     # beside `merge_strategy: scd2`.
+    #     scd2:
+    #       valid_from: _rdlt_valid_from
+    #       valid_to: _rdlt_valid_to
+    #       # Active keys ABSENT from a load: keep (default,
+    #       # incremental feeds are partial) | retire (full feeds).
+    #       absent: keep
+    #       # Open-version marker written instead of NULL, and a
+    #       # caller-supplied boundary instant — both RFC3339 WITH
+    #       # offset when set.
+    #       active_record_timestamp: "9999-12-31T00:00:00Z"
+    #       boundary_timestamp: "2026-08-03T12:00:00Z"

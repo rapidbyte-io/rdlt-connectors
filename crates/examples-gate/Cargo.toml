@@ -1,0 +1,33 @@
+[package]
+name = "examples-gate"
+description = "Workspace-level gates: the examples' document-language property and the one-dependency rule (test-only, never published)"
+# Test scaffolding for THIS repository — the name sits outside the
+# `rdlt-connector-*` pattern deliberately, so the dependency-rule test
+# binds exactly the connector crates and never its own enforcer.
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dev-dependencies]
+# The facade carries the pipeline Spec gate and the desugar table the
+# examples parse through; the sdk's `config::Document` trait is how each
+# resolved config reaches its connector's own gate.
+rdlt = { workspace = true }
+rdlt-connector-sdk = { workspace = true }
+rdlt-connector-rest = { workspace = true }
+rdlt-connector-duckdb = { workspace = true }
+rdlt-connector-file = { workspace = true }
+rdlt-connector-iceberg = { workspace = true }
+rdlt-connector-oracle = { workspace = true }
+# The workspace entry pins `default-features = false`; both halves'
+# config gates are examples subjects, so both are named here.
+rdlt-connector-postgres = { workspace = true, features = ["source", "destination"] }
+rdlt-connector-snowflake = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+
+[lints]
+workspace = true

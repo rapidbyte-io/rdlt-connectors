@@ -1,0 +1,88 @@
+# CSV files -> a DuckDB database file. No containers, no credentials.
+#
+#   rdlt run examples/csv-to-duckdb/pipeline.yaml
+#   duckdb examples/csv-to-duckdb/analytics.duckdb \
+#     -c "SELECT count(*) FROM orders"
+#
+# This example is THE reference for the CSV read options and the
+# duckdb DESTINATION vocabulary. The sample data is ;-delimited with
+# a quoted note column, so the csv block below is load-bearing, not
+# decorative.
+pipeline: csv-to-duckdb
+
+workdir: examples/csv-to-duckdb/.rdlt
+
+# Append accumulates across runs — but re-running does NOT duplicate:
+# the file source's own cursor knows a fully-read file and re-reads
+# only what grew (verified below in the README).
+write_mode: append
+
+source:
+  file:
+    streams:
+      - name: orders
+        format: csv
+        path: examples/csv-to-duckdb/data/*.csv
+
+        # The CSV shape — delimiter and quote must each be a single
+        # ASCII character; without a header, columns are named
+        # c0..cN.
+        csv:
+          delimiter: ";"
+          header: true
+          # quote: '"'
+
+        # Everything reads as text unless hinted:
+        type_hints:
+          order_id: int64
+          amount: float64
+          placed_on: date
+
+        # primary_key: [order_id]     # needed for write_mode: merge
+
+destination:
+  duckdb:
+    # The database file; created if absent — though its PARENT
+    # directory must already exist. rdlt refuses to open a database
+    # another live process holds read-write — a second writer would
+    # truncate the first's WAL.
+    path: examples/csv-to-duckdb/analytics.duckdb
+
+    # Caps DuckDB's buffer/cache (its own default is a fraction of
+    # SYSTEM memory — worth pinning on shared machines). Sugar for
+    # `settings: {memory_limit: ...}`; setting both is refused.
+    # memory_limit: 1GB
+
+    # Raw `SET key='value'` passthrough; keys must be bare
+    # identifiers — anything else is refused, never interpolated.
+    # settings:
+    #   threads: "4"
+
+    # `LOAD name` passthrough for pre-installed extensions.
+    # extensions: [json]
+
+    # The shared SQL-destination options — the identical vocabulary
+    # every SQL destination takes (jsonl-to-postgres documents each
+    # option in prose): delete_insert | upsert | scd2.
+    # merge_strategy: delete_insert
+    # tables:
+    #   orders:
+    #     merge_strategy: upsert
+    #     # CDC-style deletions: flagged rows DELETE their key
+    #     # instead of merging (boolean columns compare = TRUE,
+    #     # others IS NOT NULL). Not valid with scd2.
+    #     hard_delete: _rdlt_deleted
+    #     # In-load survivor selection; the order has NO default.
+    #     dedup_sort:
+    #       column: placed_on
+    #       order: desc
+    #     # A merge load REPLACES every scope value present in its
+    #     # rows ("reload these days"). NULL is not a scope.
+    #     merge_scope: [customer]
+    #     # Full version history — only beside merge_strategy: scd2.
+    #     scd2:
+    #       valid_from: _rdlt_valid_from
+    #       valid_to: _rdlt_valid_to
+    #       absent: keep             # keep (default) | retire
+    #       active_record_timestamp: "9999-12-31T00:00:00Z"
+    #       boundary_timestamp: "2026-08-03T12:00:00Z"

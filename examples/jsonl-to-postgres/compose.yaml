@@ -1,0 +1,19 @@
+# An empty PostgreSQL warehouse for the jsonl-to-postgres example —
+# rdlt creates the schema and tables itself.
+#
+#   docker compose -f examples/jsonl-to-postgres/compose.yaml up -d
+#   # or: podman-compose -f examples/jsonl-to-postgres/compose.yaml up -d
+services:
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: rdlt
+      POSTGRES_PASSWORD: rdlt
+      POSTGRES_DB: warehouse
+    ports:
+      - "15433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rdlt -d warehouse"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
