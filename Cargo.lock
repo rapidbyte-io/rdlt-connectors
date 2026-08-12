@@ -1702,6 +1702,7 @@ dependencies = [
  "rdlt-connector-rest",
  "rdlt-connector-sdk",
  "rdlt-connector-snowflake",
+ "rdlt-testkit",
  "serde_json",
  "serde_yaml",
 ]

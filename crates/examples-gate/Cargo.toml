@@ -26,6 +26,10 @@ rdlt-connector-oracle = { workspace = true }
 # config gates are examples subjects, so both are named here.
 rdlt-connector-postgres = { workspace = true, features = ["source", "destination"] }
 rdlt-connector-snowflake = { workspace = true }
+# The shared crash-point scanner: `tests/scanner_selfcheck.rs` holds the
+# per-crate armed-count rows (the fail-open guard the connector crates
+# carried in rdlt before the 044 cut).
+rdlt-testkit = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 
