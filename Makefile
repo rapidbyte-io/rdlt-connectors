@@ -13,6 +13,11 @@
 #     TARGET=unit make test      nextest + spawn/certify matrix only
 #     TARGET=e2e  make test      end-to-end integration tests only
 #     TARGET=sweep make test     crash-point sweeps (failpoints feature)
+#     TARGET=deep make test      the heavy claims, BY HAND or a deep CI job:
+#                                the postgres memory_bound cell (RDLT_HEAVY=1,
+#                                seeds a ~6.9 GB table; needs a container
+#                                runtime), spawning the release rdlt CLI
+#                                installed at the LOCKED rdlt revision
 #   make check                 everything a PR must pass (lint + docs + test
 #                                + e2e + sweep)
 #   make reclaim               remove every container AND volume this
@@ -215,6 +220,22 @@ else ifeq ($(TARGET),sweep)
 	# The snowflake crash sweep is DELIBERATELY absent: it talks to a real
 	# account for 101.5 min and is run BY HAND (its suite is type-checked
 	# by lint's failpoints clippy line).
+else ifeq ($(TARGET),deep)
+	# The RDLT_HEAVY memory_bound claim (moved here with the postgres
+	# crate at rdlt's 044 cut): a ~6.9 GB table streamed under a 512 MiB
+	# per-process ceiling. The cell spawns the release rdlt CLI, which
+	# this repository cannot build from source — it is INSTALLED at the
+	# LOCKED rdlt revision (tools/locked-rdlt-rev.sh, the same pin the
+	# certifier installs ride) and placed on <target>/release beside the
+	# release connector bins the spawned CLI discovers. RDLT_HEAVY=1
+	# turns every missing prerequisite from an announced skip into a
+	# hard FAIL: the deep job must never green-wash this claim.
+	$(MAKE) connector-bins
+	rev=$$(tools/locked-rdlt-rev.sh) && \
+	cargo install --git https://github.com/rapidbyte-io/rdlt --rev "$$rev" \
+	  rdlt-cli --locked --root target/rdlt-install && \
+	install -m 755 target/rdlt-install/bin/rdlt "$${CARGO_TARGET_DIR:-target}/release/rdlt"
+	RDLT_HEAVY=1 cargo nextest run -p rdlt-connector-postgres --features fixtures -E 'binary(memory_bound)'
 else
 	$(error unknown test TARGET '$(TARGET)' — see header comment)
 endif
