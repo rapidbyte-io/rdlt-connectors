@@ -18,6 +18,15 @@ failpoints = ["rdlt-connector-sdk/failpoints"]
 # rdlt-connector-file -i tonic` (and `-i clap`) at default features
 # stays empty.
 bin-serve = ["rdlt-connector-sdk/serve", "dep:clap"]
+# The certify-wire suite: tests that spawn the REAL built binary
+# through the INSTALLED certifier CLI (044 T3 — the S2
+# skip-acknowledgment wire pin moved here with the connector). OFF by
+# default — a plain workspace run must not depend on bins no workspace
+# command builds or installs. The Makefile's own line enables it AND
+# sets RDLT_BUILD_CONNECTOR_BINS=1 so the suite (re)builds the
+# connector bin and (re)installs the certifier at the locked revision;
+# without the env var missing bins fail loudly, never silently.
+spawn-bins = []
 
 # Behind `bin-serve` only — `cargo build` at default features never even
 # discovers this target, so no workspace command pays for tonic. The

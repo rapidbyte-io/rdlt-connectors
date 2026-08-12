@@ -1,5 +1,7 @@
 pub mod common;
 pub mod s3;
+#[cfg(feature = "spawn-bins")]
+mod test_certify_wire;
 mod test_conformance;
 mod test_document;
 mod test_exactly_once;

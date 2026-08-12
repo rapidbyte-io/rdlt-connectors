@@ -170,6 +170,18 @@ RDLT_BUILD_CONNECTOR_BINS=1 cargo nextest run -p rdlt-connector-iceberg --featur
 RDLT_BUILD_CONNECTOR_BINS=1 cargo nextest run -p rdlt-connector-oracle --features spawn-bins -E 'test(test_spawned_bin)'
 RDLT_BUILD_CONNECTOR_BINS=1 cargo nextest run -p rdlt-connector-oracle --features spawn-bins -E 'test(test_certify_wire)'
 RDLT_BUILD_CONNECTOR_BINS=1 cargo nextest run -p rdlt-connector-oracle --features spawn-bins -E 'test(test_kill_wire)'
+# The file connector's certify-wire suite (044 T3 carry): the S2
+# skip-acknowledgment pin — the certifier CLI's `--accept-skips`
+# surface (clap parse → pass-through → exit-code fold) driven end to
+# end over a snapshot-shaped file source. This leg left rdlt with the
+# file connector (the reference source has no snapshot shape), and
+# without it the flag surface has NO end-to-end pin anywhere. The env
+# var makes the suite itself (re)build the connector bin and
+# (re)install the certifier CLI at the LOCKED rdlt revision (a repeat
+# install at an unchanged revision is a sub-second no-op); hermetic on
+# tempdirs, no container runtime, never skips. Own line per the
+# one-module-per-invocation rule.
+RDLT_BUILD_CONNECTOR_BINS=1 cargo nextest run -p rdlt-connector-file --features spawn-bins -E 'test(test_certify_wire)'
 endef
 
 test:
