@@ -1,0 +1,75 @@
+[package]
+name = "rdlt-connector-file"
+description = "rdlt file connectors: JSONL/Parquet/CSV source and destination over local or S3 locations, with resumable cursors"
+keywords = ["elt", "parquet", "jsonl", "csv", "s3"]
+categories = ["database", "encoding"]
+documentation = "https://docs.rs/rdlt-connector-file"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+failpoints = ["rdlt-connector-sdk/failpoints"]
+# The out-of-process server binary (039 T6). OFF by default, with
+# `required-features` on the [[bin]], so LIBRARY consumers of this crate
+# never pull tonic or clap into their dependency tree — `cargo tree -p
+# rdlt-connector-file -i tonic` (and `-i clap`) at default features
+# stays empty.
+bin-serve = ["rdlt-connector-sdk/serve", "dep:clap"]
+
+# Behind `bin-serve` only — `cargo build` at default features never even
+# discovers this target, so no workspace command pays for tonic. The
+# gate compiles it explicitly (Makefile `test:`, the 024 never-compiled
+# class).
+[[bin]]
+name = "rdlt-connector-file"
+path = "src/bin/rdlt-connector-file.rs"
+required-features = ["bin-serve"]
+
+[dependencies]
+# The ONE rdlt dependency (the one-dependency rule): the SPI is reached
+# through the sdk's `spi` re-export; the object-store recoverability
+# vocabulary arrives through the sdk's forward.
+rdlt-connector-sdk = { workspace = true, features = ["schema", "object-store"] }
+# The server binary's argument surface alone (`--role`, the free
+# `--version`); optional so the library surface never carries it.
+clap = { workspace = true, optional = true }
+arrow = { workspace = true }
+async-trait = { workspace = true }
+blake3 = { workspace = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
+csv = { workspace = true }
+flate2 = { workspace = true }
+futures = { workspace = true }
+glob = { workspace = true }
+memchr = { workspace = true }
+object_store = { workspace = true }
+parquet = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+zstd = { workspace = true }
+
+[dev-dependencies]
+jsonschema = { workspace = true }
+proptest = { workspace = true }
+rdlt-connector-duckdb = { workspace = true }
+rdlt-engine = { workspace = true }
+rdlt-testkit = { workspace = true }
+tempfile = { workspace = true }
+testcontainers = { workspace = true }
+# `test-util` only (037 US2 review round 1, I7): Cargo unifies this
+# with the plain dependency's features for TEST builds alone, so
+# `tokio::time::pause`/`advance` are reachable from the lease's
+# in-file tests without adding a paused-clock mocking capability to
+# the production binary.
+tokio = { workspace = true, features = ["test-util"] }
+
+[lints]
+workspace = true

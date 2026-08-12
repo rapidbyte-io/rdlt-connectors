@@ -1,0 +1,27 @@
+[package]
+name = "rdlt-connector-sqlcore"
+description = "rdlt SQL merge core: shared options vocabulary, merge plan shapes, and the dialect seam for SQL destinations"
+keywords = ["elt", "sql", "merge", "upsert", "scd2"]
+categories = ["database"]
+documentation = "https://docs.rs/rdlt-connector-sqlcore"
+readme = "README.md"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Contract SM8: existing workspace dependencies only — this crate may never
+# add a NEW external dependency.
+[dependencies]
+rdlt-connector = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+schemars = { workspace = true }
+chrono = { workspace = true }
+
+[dev-dependencies]
+rdlt-connector = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,100 @@
+[package]
+name = "rdlt-connector-oracle"
+description = "rdlt Oracle source: streaming reads into Arrow, watermark cursors"
+# New connector, unpublished until the workspace's 0.3.0 wave.
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+failpoints = ["rdlt-connector-sdk/failpoints"]
+# The out-of-process server binary (039 T6's convention, adopted here
+# at 042). OFF by default, with `required-features` on the [[bin]], so
+# LIBRARY consumers of this crate never pull tonic or clap into their
+# dependency tree — `cargo tree -p rdlt-connector-oracle -e normal -i
+# tonic` (and `-i clap`) at default features stays empty (`-e normal`
+# because the spawn suite's rdlt-runtime DEV-dep carries tonic into
+# test builds; dev-deps never reach a consumer). This crate is
+# source-only, so the bin serves the one role and there are no role
+# features to carry.
+bin-serve = ["rdlt-connector-sdk/serve", "dep:clap"]
+# The spawn suite: tests that spawn the REAL built binary. OFF by
+# default — a plain workspace run must not depend on a bin no
+# workspace command builds. The Makefile's own lines enable it AND set
+# RDLT_BUILD_CONNECTOR_BINS=1 so the suite's helper (re)builds the bin
+# via cargo before spawning; without the env var the helper requires
+# the bin to already exist and fails loudly, never silently.
+#
+# WHAT IT GATES, precisely: the `#[cfg(feature = "spawn-bins")]` test
+# modules in `tests/cases/mod.rs` — nothing else. The feature list is
+# EMPTY and the suite's dev-deps (rdlt-runtime, rdlt-certify, and
+# tonic beneath them) are NOT optional, so a bare `cargo
+# test`/`cargo nextest` on this crate compiles them into the test
+# target whether the feature is on or off; the feature saves running
+# the cells, not building their support. No feature CAN gate them:
+# cargo rejects an optional dev-dependency outright
+# ("dev-dependencies are not allowed to be optional"). LIBRARY
+# consumers are unaffected either way — dev-dependencies never reach
+# them (see the `bin-serve` note above for the normal-dep half).
+spawn-bins = []
+
+# Behind `bin-serve` only — `cargo build` at default features never
+# even discovers this target, so no workspace command pays for tonic.
+# The gate compiles it explicitly (Makefile `test:`, the 024
+# never-compiled class).
+[[bin]]
+name = "rdlt-connector-oracle"
+path = "src/bin/rdlt-connector-oracle.rs"
+required-features = ["bin-serve"]
+
+[dependencies]
+# The sdk plus THE recorded driver exception (like duckdb's own
+# driver). `oracle` wraps ODPI-C: it needs Oracle Client libraries at
+# RUNTIME (not at build — ODPI-C compiles from vendored C source), and
+# it is SYNCHRONOUS, so every call crosses `spawn_blocking`. The
+# pure-Rust alternative was tried first and abandoned on measurement:
+# specs/032-oracle/plan.md T005 records what each driver does with the
+# same data.
+rdlt-connector-sdk = { workspace = true, features = ["schema"] }
+arrow = { workspace = true }
+async-trait = { workspace = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
+oracle = { version = "0.6.3", features = ["chrono"] }
+# The server binary's argument surface alone (`--role`, the free
+# `--version`); optional so the library surface never carries it.
+clap = { workspace = true, optional = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = { workspace = true }
+# The statement timeout the read path enforces (JDBC ReadTimeout).
+tokio = { workspace = true }
+
+[dev-dependencies]
+arrow = { workspace = true }
+tokio = { workspace = true }
+# The spawn suite's dial: ONE dev-dep whose provider owns the whole
+# spawn → handshake-line → dial → Spec RPC → socket-cleanup lifecycle.
+# UNCONDITIONAL, not behind `spawn-bins` — that feature gates the test
+# MODULES, never this entry (its own note above).
+rdlt-runtime = { workspace = true }
+# The certification and kill-matrix cells (042 Task 8): the certify
+# library drives the built bin through the source clause suite and the
+# K-vocabulary against the live Oracle fixture. PACKAGING: this crate
+# is `publish = false`, but the workspace spelling stays PATH-ONLY
+# like every other consumer of these two unpublished crates.
+rdlt-certify = { workspace = true }
+jsonschema = { workspace = true }
+rdlt-engine = { workspace = true }
+rdlt-testkit = { workspace = true }
+rdlt-connector-duckdb = { workspace = true }
+tempfile = { workspace = true }
+testcontainers = { workspace = true }
+
+[lints]
+workspace = true

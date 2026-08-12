@@ -1,0 +1,159 @@
+[package]
+name = "rdlt-connector-postgres"
+description = "rdlt PostgreSQL connectors: binary-COPY-to-Arrow source and binary-COPY destination behind one session and one type rulebook"
+keywords = ["elt", "postgres", "postgresql", "cdc", "arrow"]
+categories = ["database"]
+documentation = "https://docs.rs/rdlt-connector-postgres"
+readme = "README.md"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+default = ["source", "destination"]
+source = []
+destination = []
+failpoints = ["rdlt-connector-sdk/failpoints"]
+# Container fixtures for tests across the workspace. Test support only, no
+# semver guarantees.
+fixtures = ["dep:rdlt-testkit", "dep:testcontainers-modules"]
+# The out-of-process server binary (039 T6's convention, adopted here at
+# 041). OFF by default, with `required-features` on the [[bin]], so
+# LIBRARY consumers of this crate never pull tonic or clap into their
+# dependency tree — `cargo tree -p rdlt-connector-postgres -e normal -i
+# tonic` (and `-i clap`) at default features stays empty (`-e normal`
+# because the spawn suite's rdlt-runtime DEV-dep carries tonic into
+# test builds; dev-deps never reach a consumer). The bin serves BOTH
+# halves, so the feature carries `source` + `destination` explicitly:
+# `--no-default-features --features bin-serve` still compiles the bin
+# rather than tripping over the role gates.
+bin-serve = ["source", "destination", "rdlt-connector-sdk/serve", "dep:clap"]
+# The spawn suite: tests that spawn the REAL built binary. OFF by
+# default — a plain workspace run must not depend on a bin no workspace
+# command builds. The Makefile's own line enables it AND sets
+# RDLT_BUILD_CONNECTOR_BINS=1 so the suite's helper (re)builds the bin
+# via cargo before spawning; without the env var the helper requires the
+# bin to already exist and fails loudly, never silently.
+#
+# WHAT IT GATES, precisely: the `#[cfg(feature = "spawn-bins")]` test
+# modules in `tests/cases/mod.rs` — nothing else. The feature list is
+# EMPTY and the suite's dev-deps (rdlt-runtime, rdlt-certify, and tonic
+# beneath them) are NOT optional, so a bare `cargo test`/`cargo nextest`
+# on this crate compiles them into the test target whether the feature
+# is on or off; the feature saves running the cells, not building their
+# support. No feature CAN gate them: cargo rejects an optional
+# dev-dependency outright ("dev-dependencies are not allowed to be
+# optional"), so the only shape that would is a separate test crate —
+# a move nobody has needed yet. LIBRARY
+# consumers are unaffected either way — dev-dependencies never reach
+# them (see the `bin-serve` note above for the normal-dep half).
+spawn-bins = []
+
+# Behind `bin-serve` only — `cargo build` at default features never even
+# discovers this target, so no workspace command pays for tonic. The
+# gate compiles it explicitly (Makefile `test:`, the 024 never-compiled
+# class).
+[[bin]]
+name = "rdlt-connector-postgres"
+path = "src/bin/rdlt-connector-postgres.rs"
+required-features = ["bin-serve"]
+
+[dependencies]
+# The ONE rdlt dependency (the one-dependency rule): the SPI is reached
+# through the sdk's `spi` re-export. sqlcore is the RECORDED exception —
+# the shared SQL merge core is connector substrate, not the SPI; whether
+# it folds into the sdk is an owner decision at the connector rewrites.
+rdlt-connector-sdk = { workspace = true, features = ["schema"] }
+rdlt-connector-sqlcore = { workspace = true }
+# The server binary's argument surface alone (`--role`, the free
+# `--version`); optional so the library surface never carries it.
+clap = { workspace = true, optional = true }
+schemars = { workspace = true }
+arrow-array = { workspace = true }
+arrow-cast = { workspace = true }
+arrow-schema = { workspace = true }
+arrow-select = { workspace = true }
+async-trait = { workspace = true }
+blake3 = { workspace = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
+futures = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-postgres = { workspace = true }
+tokio-postgres-rustls = { workspace = true }
+# Container fixtures (behind `fixtures`): non-dev so other crates' tests reach
+# them through their dev-dependency on this crate.
+rdlt-testkit = { workspace = true, optional = true }
+testcontainers-modules = { workspace = true, optional = true }
+rustls = { workspace = true }
+rustls-pemfile = { workspace = true }
+rustls-native-certs = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+iai-callgrind = { workspace = true }
+tokio-postgres-rustls = { workspace = true }
+rustls = { workspace = true }
+rustls-pemfile = { workspace = true }
+rcgen = { workspace = true }
+proptest = { workspace = true }
+rdlt-connector-duckdb = { workspace = true }
+rdlt-engine = { workspace = true }
+rdlt-connector-postgres = { path = ".", features = ["fixtures"] }
+# The spawn suite's dial: ONE dev-dep whose provider owns the whole
+# spawn → handshake-line → dial → Spec RPC → socket-cleanup lifecycle.
+# Chosen over the rdlt-connector-client + rdlt-connector-protocol pair,
+# which would mean two dev-deps plus hand-rolled socket hygiene for the
+# same assertion. UNCONDITIONAL, not behind `spawn-bins` — see that
+# feature's note: the feature gates the test MODULES, never this entry.
+rdlt-runtime = { workspace = true }
+# The certification cells (041 Task 3): the certify library drives the
+# built bin through the full clause suite against a live container.
+#
+# PACKAGING, stated once for every dev-dep above and below, because the
+# rule is not the intuitive one and getting it wrong is a release
+# blocker rather than a warning. Cargo STRIPS a version-less
+# (path-only) dev-dependency from the published manifest entirely and
+# KEEPS a versioned one. So a dev-dep's workspace entry decides whether
+# it can block `cargo publish` of THIS crate at all:
+#
+#   * `rdlt-certify` and `rdlt-runtime` are both `publish = false` and
+#     both spelled path-only in the workspace. They are stripped —
+#     packaging this crate never asks the registry about them, and the
+#     cells they drive are simply absent from the published tarball's
+#     manifest. That is the correct shape: a test-only edge to an
+#     unpublished crate must not hold a shipping connector hostage.
+#     (`rdlt-runtime` carried `version = "0.3.0"` until this was
+#     measured, which DID hold it hostage — a `publish = false` crate
+#     named at a version the registry will never serve.)
+#   * `rdlt-connector-duckdb`, `rdlt-engine` and `rdlt-testkit` carry
+#     `version = "0.3.0"` and survive into the published manifest — but
+#     all three are themselves publishable, so once the workspace's
+#     0.3.0 wave lands they resolve. They are a sequencing constraint,
+#     not a blocker.
+#
+# What blocks publishing this crate, in the order cargo hits it: the
+# NORMAL deps `rdlt-connector-sdk` and `rdlt-connector-sqlcore` FIRST —
+# a normal dependency is unconditional, so those two must be on the
+# registry at `0.3.0` before any `cargo publish` here can resolve
+# (verified: `cargo package -p rdlt-connector-postgres --no-verify`
+# dies on `rdlt-connector-sdk` and gets no further). Behind them, the
+# three publishable dev-deps above. Nothing else.
+rdlt-certify = { workspace = true }
+rdlt-testkit = { workspace = true }
+tempfile = { workspace = true }
+testcontainers-modules = { workspace = true }
+jsonschema = { workspace = true }
+
+[lints]
+workspace = true
+
+[[bench]]
+name = "iai_pg"
+harness = false

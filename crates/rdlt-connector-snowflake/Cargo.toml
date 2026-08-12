@@ -1,0 +1,63 @@
+[package]
+name = "rdlt-connector-snowflake"
+description = "rdlt Snowflake destination: internal-stage parquet ingestion, sqlcore-planned merges, exactly-once units"
+keywords = ["elt", "snowflake", "warehouse", "sql", "arrow"]
+categories = ["database"]
+documentation = "https://docs.rs/rdlt-connector-snowflake"
+readme = "README.md"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+failpoints = ["rdlt-connector-sdk/failpoints"]
+# The out-of-process server binary (039 T6, destination-only —
+# D-039-3's enabling half). OFF by default, with `required-features` on
+# the [[bin]], so LIBRARY consumers of this crate never pull tonic or
+# clap into their dependency tree — `cargo tree -p
+# rdlt-connector-snowflake -i tonic` (and `-i clap`) at default
+# features stays empty.
+bin-serve = ["rdlt-connector-sdk/serve", "dep:clap"]
+
+# Behind `bin-serve` only — `cargo build` at default features never even
+# discovers this target, so no workspace command pays for tonic. The
+# gate compiles it explicitly (Makefile `test:`, the 024 never-compiled
+# class).
+[[bin]]
+name = "rdlt-connector-snowflake"
+path = "src/bin/rdlt-connector-snowflake.rs"
+required-features = ["bin-serve"]
+
+[dependencies]
+# The ONE rdlt dependency (the one-dependency rule): the SPI is reached
+# through the sdk's `spi` re-export. sqlcore is the RECORDED exception
+# for SQL destinations — the shared merge core.
+rdlt-connector-sdk = { workspace = true, features = ["schema"] }
+# The server binary's argument surface alone (`--role`, the free
+# `--version`); optional so the library surface never carries it.
+clap = { workspace = true, optional = true }
+rdlt-connector-sqlcore = { workspace = true }
+arrow-array = { workspace = true }
+arrow-schema = { workspace = true }
+async-trait = { workspace = true }
+# Parts travel as parquet.
+parquet = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+snowflake-connector-rs = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+futures = { workspace = true }
+rdlt-connector-postgres = { workspace = true, features = ["destination", "fixtures"] }
+rdlt-engine = { workspace = true }
+rdlt-testkit = { workspace = true }
+tempfile = { workspace = true }
+tokio-postgres = { workspace = true }
+
+[lints]
+workspace = true

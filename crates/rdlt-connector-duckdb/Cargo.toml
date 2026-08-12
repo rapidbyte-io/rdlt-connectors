@@ -1,0 +1,102 @@
+[package]
+name = "rdlt-connector-duckdb"
+description = "rdlt DuckDB destination: Arrow ingestion, struct-native lowering, staged atomic commits"
+keywords = ["elt", "duckdb", "arrow", "olap", "sql"]
+categories = ["database"]
+documentation = "https://docs.rs/rdlt-connector-duckdb"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+failpoints = ["rdlt-connector-sdk/failpoints"]
+# The out-of-process server binary (039 T6's convention, adopted here
+# at 042). OFF by default, with `required-features` on the [[bin]], so
+# LIBRARY consumers of this crate never pull tonic or clap into their
+# dependency tree — `cargo tree -p rdlt-connector-duckdb -e normal -i
+# tonic` (and `-i clap`) at default features stays empty (`-e normal`
+# because the spawn suite's rdlt-runtime DEV-dep carries tonic into
+# test builds; dev-deps never reach a consumer). This crate is
+# destination-only, so the bin serves the one role and there are no
+# role features to carry.
+bin-serve = ["rdlt-connector-sdk/serve", "dep:clap"]
+# The spawn suite: tests that spawn the REAL built binary. OFF by
+# default — a plain workspace run must not depend on a bin no workspace
+# command builds. The Makefile's own lines enable it AND set
+# RDLT_BUILD_CONNECTOR_BINS=1 so the suite's helper (re)builds the bin
+# via cargo before spawning; without the env var the helper requires the
+# bin to already exist and fails loudly, never silently.
+#
+# WHAT IT GATES, precisely: the `#[cfg(feature = "spawn-bins")]` test
+# modules in `tests/cases/mod.rs` — nothing else. The feature list is
+# EMPTY and the suite's dev-deps (rdlt-runtime, rdlt-certify, and tonic
+# beneath them) are NOT optional, so a bare `cargo test`/`cargo nextest`
+# on this crate compiles them into the test target whether the feature
+# is on or off; the feature saves running the cells, not building their
+# support. No feature CAN gate them: cargo rejects an optional
+# dev-dependency outright ("dev-dependencies are not allowed to be
+# optional"). LIBRARY consumers are unaffected either way —
+# dev-dependencies never reach them (see the `bin-serve` note above for
+# the normal-dep half).
+spawn-bins = []
+
+# Behind `bin-serve` only — `cargo build` at default features never even
+# discovers this target, so no workspace command pays for tonic. The
+# gate compiles it explicitly (Makefile `test:`, the 024 never-compiled
+# class).
+[[bin]]
+name = "rdlt-connector-duckdb"
+path = "src/bin/rdlt-connector-duckdb.rs"
+required-features = ["bin-serve"]
+
+[dependencies]
+# The sdk plus the TWO recorded exceptions: sqlcore (the shared merge
+# core, as postgres/snowflake) and duckdb itself (the workspace arrow
+# major is coupled to it).
+rdlt-connector-sdk = { workspace = true, features = ["schema"] }
+rdlt-connector-sqlcore = { workspace = true }
+# The server binary's argument surface alone (`--role`, the free
+# `--version`); optional so the library surface never carries it.
+clap = { workspace = true, optional = true }
+async-trait = { workspace = true }
+duckdb = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+arrow = { workspace = true }
+arrow-array = { workspace = true }
+arrow-schema = { workspace = true }
+bytes = { workspace = true }
+duckdb = { workspace = true }
+jsonschema = { workspace = true }
+rdlt-connector-postgres = { workspace = true, default-features = false, features = ["destination", "fixtures"] }
+rdlt-engine = { workspace = true }
+rdlt-testkit = { workspace = true }
+# The spawn suite's dial: ONE dev-dep whose provider owns the whole
+# spawn → handshake-line → dial → Spec RPC → socket-cleanup lifecycle.
+# UNCONDITIONAL, not behind `spawn-bins` — that feature gates the test
+# MODULES, never this entry (its own note above).
+rdlt-runtime = { workspace = true }
+# The certification and kill-matrix cells (042 Task 6): the certify
+# library drives the built bin through the destination clause suite and
+# the K-vocabulary against a hermetic tempdir database. PACKAGING:
+# rdlt-certify and rdlt-runtime are both `publish = false` and spelled
+# PATH-ONLY in the workspace — cargo STRIPS a version-less
+# dev-dependency from the published manifest entirely, so neither can
+# ever block `cargo publish` of this crate (a versioned spelling of an
+# unpublished crate WOULD, silently at packaging time — the 023 rule:
+# path-only makes refusal loud, version-less makes stripping safe).
+rdlt-certify = { workspace = true }
+tempfile = { workspace = true }
+testcontainers-modules = { workspace = true }
+tokio-postgres = { workspace = true }
+
+[lints]
+workspace = true
