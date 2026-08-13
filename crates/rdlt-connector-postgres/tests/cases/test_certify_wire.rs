@@ -19,7 +19,10 @@
 //! Skip-not-fail without a container runtime, like every container
 //! suite in this crate.
 
-use rdlt_certify::{Target, assert_certified_all_pass, certify_destination, certify_source};
+use rdlt_certify::{
+    DESTINATION_DUAL_ROLE_SKIP, SOURCE_DUAL_ROLE_SKIP, Target,
+    assert_certified_all_pass_with_named_skips, certify_destination, certify_source,
+};
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 use serde_json::json;
 
@@ -81,7 +84,9 @@ async fn seed_source_fixture(container: &PostgresContainer) {
 /// the same live server (the certification bar's repeated element: a
 /// connector must survive being certified again from the state the
 /// first certification left behind; the pg source is read-only against
-/// its tables, so the second pass proves exactly that).
+/// its tables, so the second pass proves exactly that). P13 is the
+/// dual-role bin's one announced skip: both roles are served, so there
+/// is no unserved role to refuse.
 #[tokio::test(flavor = "multi_thread")]
 async fn the_postgres_source_certifies_all_pass() {
     let Some(container) = PostgresContainer::start().await else {
@@ -93,9 +98,10 @@ async fn the_postgres_source_certifies_all_pass() {
     for _attempt in 1..=2 {
         let report = certify_source(&target, &[]).await;
 
-        assert_certified_all_pass(
+        assert_certified_all_pass_with_named_skips(
             &report,
             &["S1", "S2", "S4", "P1", "P2", "P3", "P4", "P5", "P6", "P7"],
+            &[("P13", SOURCE_DUAL_ROLE_SKIP)],
         );
     }
 }
@@ -106,7 +112,8 @@ async fn the_postgres_source_certifies_all_pass() {
 /// no-merge Skip the file destination records), the protocol clauses,
 /// and the session clauses P8-P12 on raw dials of the live socket
 /// (P11 refuses a deliberate two-batch write frame; P12 judges the
-/// induced refusals' error-frame text).
+/// induced refusals' error-frame text). P13 is the dual-role bin's one
+/// announced skip, as on the source cell.
 /// The read-back probe is a SEPARATE connection into the scratch
 /// dataset — no in-flight-session hazard for its SQL.
 #[tokio::test(flavor = "multi_thread")]
@@ -131,11 +138,12 @@ async fn the_postgres_destination_certifies_all_pass_with_d8_live() {
     let report =
         certify_destination(&Target::resolve_path(built_bin(), config), Some(&probe)).await;
 
-    assert_certified_all_pass(
+    assert_certified_all_pass_with_named_skips(
         &report,
         &[
             "D1", "D2", "D3", "D4", "D5", "D6", "D8", "P1", "P2", "P3", "P4", "P7", "P8", "P9",
             "P10", "P11", "P12",
         ],
+        &[("P13", DESTINATION_DUAL_ROLE_SKIP)],
     );
 }
