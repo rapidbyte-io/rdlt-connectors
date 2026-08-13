@@ -3917,7 +3917,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03da047801ff44bb6a4d407d4860c05fd70bb81714e6b2f3812603d5b145b042"
 dependencies = [
  "heck",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "log",
  "multimap",
  "petgraph",
@@ -3938,7 +3938,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b570b25f7617e43d59005d0990ccb79e950a423952cea19671b7a876da390adf"
 dependencies = [
  "anyhow",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "proc-macro2",
  "quote",
  "syn 2.0.119",
@@ -4267,7 +4267,7 @@ dependencies = [
 [[package]]
 name = "rdlt"
 version = "0.3.0"
-source = "git+https://github.com/rapidbyte-io/rdlt#360beea80b1af23e825d4f9e84308d341fe1460f"
+source = "git+https://github.com/rapidbyte-io/rdlt#92fbd263d975df955bf3d583af2f044f644252b9"
 dependencies = [
  "rdlt-connector",
  "rdlt-connector-sdk",
@@ -4283,7 +4283,7 @@ dependencies = [
 [[package]]
 name = "rdlt-certify"
 version = "0.3.0"
-source = "git+https://github.com/rapidbyte-io/rdlt#360beea80b1af23e825d4f9e84308d341fe1460f"
+source = "git+https://github.com/rapidbyte-io/rdlt#92fbd263d975df955bf3d583af2f044f644252b9"
 dependencies = [
  "arrow",
  "async-trait",
@@ -4302,7 +4302,7 @@ dependencies = [
 [[package]]
 name = "rdlt-connector"
 version = "0.3.0"
-source = "git+https://github.com/rapidbyte-io/rdlt#360beea80b1af23e825d4f9e84308d341fe1460f"
+source = "git+https://github.com/rapidbyte-io/rdlt#92fbd263d975df955bf3d583af2f044f644252b9"
 dependencies = [
  "arrow-array",
  "arrow-buffer",
@@ -4322,7 +4322,7 @@ dependencies = [
 [[package]]
 name = "rdlt-connector-client"
 version = "0.3.0"
-source = "git+https://github.com/rapidbyte-io/rdlt#360beea80b1af23e825d4f9e84308d341fe1460f"
+source = "git+https://github.com/rapidbyte-io/rdlt#92fbd263d975df955bf3d583af2f044f644252b9"
 dependencies = [
  "arrow",
  "async-trait",
@@ -4504,7 +4504,7 @@ dependencies = [
 [[package]]
 name = "rdlt-connector-protocol"
 version = "0.3.0"
-source = "git+https://github.com/rapidbyte-io/rdlt#360beea80b1af23e825d4f9e84308d341fe1460f"
+source = "git+https://github.com/rapidbyte-io/rdlt#92fbd263d975df955bf3d583af2f044f644252b9"
 dependencies = [
  "prost",
  "protoc-bin-vendored",
@@ -4546,7 +4546,7 @@ dependencies = [
 [[package]]
 name = "rdlt-connector-sdk"
 version = "0.3.0"
-source = "git+https://github.com/rapidbyte-io/rdlt#360beea80b1af23e825d4f9e84308d341fe1460f"
+source = "git+https://github.com/rapidbyte-io/rdlt#92fbd263d975df955bf3d583af2f044f644252b9"
 dependencies = [
  "arrow",
  "async-trait",
@@ -4602,7 +4602,7 @@ dependencies = [
 [[package]]
 name = "rdlt-core"
 version = "0.3.0"
-source = "git+https://github.com/rapidbyte-io/rdlt#360beea80b1af23e825d4f9e84308d341fe1460f"
+source = "git+https://github.com/rapidbyte-io/rdlt#92fbd263d975df955bf3d583af2f044f644252b9"
 dependencies = [
  "blake3",
  "fail",
@@ -4614,7 +4614,7 @@ dependencies = [
 [[package]]
 name = "rdlt-engine"
 version = "0.3.0"
-source = "git+https://github.com/rapidbyte-io/rdlt#360beea80b1af23e825d4f9e84308d341fe1460f"
+source = "git+https://github.com/rapidbyte-io/rdlt#92fbd263d975df955bf3d583af2f044f644252b9"
 dependencies = [
  "arrow",
  "bytes",
@@ -4632,7 +4632,7 @@ dependencies = [
 [[package]]
 name = "rdlt-runtime"
 version = "0.3.0"
-source = "git+https://github.com/rapidbyte-io/rdlt#360beea80b1af23e825d4f9e84308d341fe1460f"
+source = "git+https://github.com/rapidbyte-io/rdlt#92fbd263d975df955bf3d583af2f044f644252b9"
 dependencies = [
  "async-trait",
  "rdlt-connector",
@@ -4646,7 +4646,7 @@ dependencies = [
 [[package]]
 name = "rdlt-testkit"
 version = "0.3.0"
-source = "git+https://github.com/rapidbyte-io/rdlt#360beea80b1af23e825d4f9e84308d341fe1460f"
+source = "git+https://github.com/rapidbyte-io/rdlt#92fbd263d975df955bf3d583af2f044f644252b9"
 dependencies = [
  "arrow",
  "async-trait",
@@ -6589,7 +6589,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
