@@ -24,31 +24,33 @@ REST→Postgres benchmark rides this path.
 
 ```yaml
 source:
-  rest:
-    base_url: "https://api.example.com"
-    auth:
-      oauth2_client_credentials:
-        token_url: "https://auth.example.com/token"
-        client_id: my-client
-        client_secret: "${SECRET}"
-        scopes: [read]
-    headers: {user-agent: rdlt}
-    min_request_interval_ms: 100
-    streams:
-      - name: repos
-        path: /repos
-        pagination: {type: page}
-        incremental: {cursor_field: updated_at, start_param: since}
-      - name: issues
-        path: /repos/{owner}/{repo}/issues
-        records_path: data.items[*]
-        pagination: {type: link_header}
-        parent:
-          stream: repos
-          placeholders: {owner: owner, repo: name}
-          include: [name]
-        response_actions:
-          - {status: 404, action: end_stream}
+  connector:
+    id: io.rapidbyte.rest
+    config:
+      base_url: "https://api.example.com"
+      auth:
+        oauth2_client_credentials:
+          token_url: "https://auth.example.com/token"
+          client_id: my-client
+          client_secret: "${SECRET}"
+          scopes: [read]
+      headers: {user-agent: rdlt}
+      min_request_interval_ms: 100
+      streams:
+        - name: repos
+          path: /repos
+          pagination: {type: page}
+          incremental: {cursor_field: updated_at, start_param: since}
+        - name: issues
+          path: /repos/{owner}/{repo}/issues
+          records_path: "data.items[*]"   # quoted: the document gate scans `[*` as a YAML alias
+          pagination: {type: link_header}
+          parent:
+            stream: repos
+            placeholders: {owner: owner, repo: name}
+            include: [name]
+          response_actions:
+            - {status: 404, action: end_stream}
 ```
 
 Entry points: `source::Rest::from_yaml(…)`, `source::Config::from_yaml` /

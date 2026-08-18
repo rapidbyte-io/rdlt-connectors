@@ -49,24 +49,28 @@ pipeline: app-mirror
 write_mode: {merge: {key: [id]}}
 
 source:
-  postgres:
-    conn: "postgresql://etl@db.internal/app?sslmode=verify-full&sslrootcert=/etc/ca.pem"
-    tables:
-      - name: orders
-        cursor: {column: updated_at}
-      - name: customers
+  connector:
+    id: io.rapidbyte.postgres
+    config:
+      conn: "postgresql://etl@db.internal/app?sslmode=verify-full&sslrootcert=/etc/ca.pem"
+      tables:
+        - name: orders
+          cursor: {column: updated_at}
+        - name: customers
 
 destination:
-  postgres:
-    conn: "host=warehouse user=loader password=… dbname=analytics"
-    dataset: mirror
-    merge_strategy: upsert
+  connector:
+    id: io.rapidbyte.postgres
+    config:
+      conn: "host=warehouse user=loader password=… dbname=analytics"
+      dataset: mirror
+      merge_strategy: upsert
 ```
 
-The source block can instead point at its own reusable file —
-`source: postgres: {config: source.yaml}` — carrying **the same fields under
-the same validation**; combining `config` with inline fields is a loud
-error. Every source example in this README works in either position.
+The arm's `config` can instead point at its own reusable file —
+`config: source.yaml` — carrying **the same fields under the same
+validation**; the value is either the inline document or the path, never
+a mix. Every source example in this README works in either position.
 
 Embedders build the same objects from Rust. Both directions take a document
 or a struct, and every entry point runs the one validation path:
@@ -133,19 +137,20 @@ One pipeline per YAML file. Top-level fields:
 | `pipeline` | string | required | Pipeline id — names engine state; keep it stable across runs (cursors and resume state key on it). |
 | `workdir` | path | `.rdlt` | Engine working directory (WAL, state). |
 | `write_mode` | `append` \| `replace` \| `{merge: {key: [...]}}` | `append` | Write disposition for every stream. `append` adds rows; `replace` truncates once per load then loads; `merge` converges to one row per key — required for the upsert/scd2 strategies, cursor-lag exact totals, and the CDC composition. |
-| `source.postgres` | inline document, or `{config: path}` | required | The source document — see the full reference below. |
-| `destination.postgres` | inline fields | required | Connection + options — see the full reference below. |
+| `source.connector` | `{id: io.rapidbyte.postgres, config: …}` | required | The source document, inline or a path — see the full reference below. |
+| `destination.connector` | `{id: io.rapidbyte.postgres, config: …}` | required | Connection + options — see the full reference below. |
 
-(Other connectors — `source.rest`, `source.file`, `destination.duckdb`,
-`destination.parquet` — take their own blocks; this README covers postgres.)
+(Other connectors take the same arm under their own ids —
+`io.rapidbyte.rest`, `io.rapidbyte.file`, `io.rapidbyte.duckdb`, … —
+this README covers postgres.)
 
 ---
 
 ## Source configuration — full reference
 
 One document, two carriers with identical fields and identical validation:
-inline under `source: postgres:`, or a standalone YAML/JSON file referenced
-by `source: postgres: {config: path}`. Unknown fields are rejected by both
+inline under the arm's `config:`, or a standalone YAML/JSON file referenced
+by `config: path`. Unknown fields are rejected by both
 the schema and the parser. A validation failure names the field, table, or
 column that caused it.
 
@@ -403,18 +408,20 @@ Worked example:
 
 ```yaml
 destination:
-  postgres:
-    conn: "host=warehouse user=loader password=… dbname=analytics"
-    dataset: mirror
-    merge_strategy: upsert
-    tables:
-      orders:
-        hard_delete: _rdlt_deleted
-        dedup_sort: {column: seq, order: desc}
-        merge_scope: [day]
-      customers:
-        merge_strategy: scd2
-        scd2: {absent: retire}
+  connector:
+    id: io.rapidbyte.postgres
+    config:
+      conn: "host=warehouse user=loader password=… dbname=analytics"
+      dataset: mirror
+      merge_strategy: upsert
+      tables:
+        orders:
+          hard_delete: _rdlt_deleted
+          dedup_sort: {column: seq, order: desc}
+          merge_scope: [day]
+        customers:
+          merge_strategy: scd2
+          scd2: {absent: retire}
 ```
 
 ### SCD2 block (`tables.<name>.scd2`)
