@@ -1,8 +1,10 @@
 //! The examples are LOAD-BEARING: every `examples/*/pipeline.yaml`
-//! must parse through the real Spec gate, every connector reference in
-//! it — rich spelling or `connector:` — must desugar to a known
-//! reverse-DNS id, and every resolved config must pass that connector's
-//! own Document gate; each connector's designated REFERENCE example
+//! must parse through the real Spec gate, every arm must be the
+//! explicit `connector:` form (the only spelling the engine parses —
+//! the pinned Spec still accepts the retired per-connector sugar, so
+//! the arm shape is asserted here) naming a known reverse-DNS id, and
+//! every resolved config must pass that connector's own Document
+//! gate; each connector's designated REFERENCE example
 //! must additionally mention EVERY field of that connector's config
 //! schema, active or commented, so "the full configuration is visible
 //! in examples/" stays a property the gate holds rather than a promise
@@ -13,20 +15,19 @@
 use std::collections::{BTreeSet, HashSet};
 use std::path::{Path, PathBuf};
 
-use rdlt::pipeline_spec::{ConfigSource, ConnectorRef};
+use rdlt::pipeline_spec::{ConfigSource, ConnectorRef, DestSpec, SourceSpec};
 use rdlt_connector_sdk::config::Document;
 
-/// Every rich spelling the pipeline document exposes. The expected ids
-/// are derived through the production desugar table rather than copied
-/// into this test.
-const CONNECTOR_SPELLINGS: &[&str] = &[
-    "rest",
-    "oracle",
-    "file",
-    "postgres",
-    "duckdb",
-    "iceberg",
-    "snowflake",
+/// Every first-party connector id an example may name — the full
+/// reverse-DNS spelling, exactly as each arm's `id:` writes it.
+const CONNECTOR_IDS: &[&str] = &[
+    "io.rapidbyte.rest",
+    "io.rapidbyte.oracle",
+    "io.rapidbyte.file",
+    "io.rapidbyte.postgres",
+    "io.rapidbyte.duckdb",
+    "io.rapidbyte.iceberg",
+    "io.rapidbyte.snowflake",
 ];
 
 fn examples_dir() -> PathBuf {
@@ -92,19 +93,14 @@ fn validate_config(example: &str, role: &str, reference: &ConnectorRef) {
     }
 }
 
-/// Every example directory carries a pipeline.yaml that parses, and
-/// both sides desugar to a shipped connector id and pass that
-/// connector's config gate. The count is pinned so a deleted or
-/// unreadable example fails rather than shrinking the property.
+/// Every example directory carries a pipeline.yaml that parses, both
+/// arms are written in the explicit `connector:` form, both name a
+/// shipped connector id and pass that connector's config gate. The
+/// count is pinned so a deleted or unreadable example fails rather
+/// than shrinking the property.
 #[test]
 fn every_example_pipeline_parses_desugars_and_passes_connector_gates() {
-    let known_ids: HashSet<_> = CONNECTOR_SPELLINGS
-        .iter()
-        .map(|spelling| {
-            rdlt::pipeline_spec::connector_id(spelling)
-                .unwrap_or_else(|| panic!("`{spelling}` must have a desugar-table row"))
-        })
-        .collect();
+    let known_ids: HashSet<&str> = CONNECTOR_IDS.iter().copied().collect();
     let mut seen = 0;
     for entry in std::fs::read_dir(examples_dir()).expect("examples/ exists") {
         let entry = entry.expect("entry");
@@ -133,6 +129,18 @@ fn every_example_pipeline_parses_desugars_and_passes_connector_gates() {
         if let Some(rdlt::pipeline_spec::WriteModeSpec::Merge { key }) = &spec.write_mode {
             assert!(!key.is_empty(), "{name}: a merge write mode needs a key");
         }
+        // The engine's shipped facade parses ONLY the explicit
+        // `connector:` arm; the pinned Spec here is older and would
+        // still accept the retired per-connector sugar, so the arm
+        // shape itself is part of the property.
+        assert!(
+            matches!(spec.source, SourceSpec::Connector(_)),
+            "{name}: the source arm must be the explicit `connector:` form"
+        );
+        assert!(
+            matches!(spec.destination, DestSpec::Connector(_)),
+            "{name}: the destination arm must be the explicit `connector:` form"
+        );
         // The example's own directory is the base, so a path-form
         // config resolves relative to the files beside it.
         let source = spec

@@ -53,12 +53,13 @@ make connector-bins
 export PATH="$PWD/target/release:$PATH"   # in each repository
 ```
 
-A pipeline's `postgres:`/`file:`/… block resolves to the binary named
-`rdlt-connector-<name>` on PATH — that convention is the whole
+A pipeline arm names its connector by reverse-DNS id, and the id's
+last segment names the binary: `id: io.rapidbyte.postgres` resolves to
+`rdlt-connector-postgres` on PATH — that convention is the whole
 discovery mechanism. A single connector can also be built by crate
 (`cargo build --release -p rdlt-connector-postgres --features
 bin-serve`), and a binary that lives off PATH is named explicitly with
-`path:` in the pipeline's `connector:` form:
+`path:` beside the id:
 
 ```yaml
 source:
@@ -87,17 +88,18 @@ it, commented with a real value where it does not:
 | iceberg destination | postgres-to-iceberg |
 
 This is a GATE PROPERTY, not a promise: `crates/examples-gate/tests/examples.rs`
-parses every pipeline through the real Spec gate, desugars every
-connector reference to a shipped connector's id, validates every config
-against that connector's own document gate, and fails if a reference
-example omits any field of its connector's config schema. A config
+parses every pipeline through the real Spec gate, checks every arm's
+`connector:` id names a shipped first-party connector, validates every
+config against that connector's own document gate, and fails if a
+reference example omits any field of its connector's config schema. A config
 field added without a home in the examples fails the suite.
 
-Every connector accepts its config inline (as these do) or as a bare
-string path — `postgres: postgres.yaml` — pointing at a separate
-YAML/JSON document with the identical shape, resolved relative to the
-pipeline file's own directory. The value is either the document or the
-path, so half a document can never be silently ignored.
+Every arm's `config:` is the connector's own document, written inline
+(as these do) or as a bare string path — `config: postgres.yaml` —
+pointing at a separate YAML/JSON file with the identical shape,
+resolved relative to the pipeline file's own directory. The value is
+either the document or the path, so half a document can never be
+silently ignored.
 
 Fixed host ports, chosen high to avoid dev services: postgres 15432
 (parquet example) / 15433 (postgres-destination example) / 15434
@@ -118,8 +120,8 @@ truncates rather than appends.
 
 What the pipeline says:
 
-- The `rest:` block shows the full vocabulary: all six auth forms,
-  all seven pagination families, incremental windows, response
+- The rest source's config shows the full vocabulary: all six auth
+  forms, all seven pagination families, incremental windows, response
   actions, a parent-child stream (commented — it makes 1,351 polite
   requests), and type hints.
 - The active parts: PokéAPI's `next` link is followed
@@ -150,7 +152,7 @@ real DATE column — the `type_hints` did the parsing, not luck. A
 second run adds 0 rows: the file source's own cursor knows a
 fully-read file and re-reads only what grew.
 
-The `duckdb:` block is the reference for that destination:
+The duckdb destination's config is the reference for that destination:
 `memory_limit` (worth pinning on shared machines — DuckDB's own
 default is a fraction of SYSTEM memory), bare-identifier-only
 `settings:` passthrough, `extensions:`, and the shared SQL merge
@@ -300,12 +302,14 @@ encoded one. So this is a destination setting, not an engine one:
 
 ```yaml
 destination:
-  file:
-    path: out
-    format: parquet
-    parts:
-      target_bytes: 134217728    # ~128 MB files (the default)
-      roll_after_seconds: 900    # … or every 15 min, whichever first
+  connector:
+    id: io.rapidbyte.file
+    config:
+      path: out
+      format: parquet
+      parts:
+        target_bytes: 134217728    # ~128 MB files (the default)
+        roll_after_seconds: 900    # … or every 15 min, whichever first
 ```
 
 The default is 128 MiB, so a source paging a few hundred rows at a

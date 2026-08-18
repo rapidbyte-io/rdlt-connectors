@@ -28,174 +28,178 @@ write_mode: replace
 #   every_bytes: 100000
 
 source:
-  # The source document, written INLINE. Every connector also accepts
-  # a bare string path instead (`rest: rest.yaml`, relative to this
-  # pipeline file's own directory), which is the better choice once a
-  # document is shared between pipelines or holds a credential you
-  # want to keep out of this file.
-  rest:
-    base_url: https://pokeapi.co/api/v2
+  # The connector's config document, written INLINE. `config:` also
+  # accepts a bare string path instead (`config: rest.yaml`, relative
+  # to this pipeline file's own directory), which is the better choice
+  # once a document is shared between pipelines or holds a credential
+  # you want to keep out of this file.
+  connector:
+    id: io.rapidbyte.rest
+    config:
+      base_url: https://pokeapi.co/api/v2
 
-    # `none` is spelled out to show where credentials WOULD go.
-    # Anything secret belongs under `auth:`, never in `headers:` or
-    # `params:` — only `auth:` values are Secret-wrapped and masked
-    # (a credential-shaped header name is refused with a pointer
-    # here). Exactly one form:
-    auth: none
-    # auth:
-    #   bearer:
-    #     token: sk-live-...
-    # auth:
-    #   header:
-    #     name: X-Custom-Auth
-    #     value: t0ps3cret
-    # auth:
-    #   basic:
-    #     username: svc-rdlt
-    #     password: change-me
-    # auth:
-    #   api_key:
-    #     name: api_key
-    #     key: k-123
-    #     location: header          # header (default) | query
-    # auth:
-    #   oauth2_client_credentials:
-    #     token_url: https://auth.example.com/oauth/token
-    #     client_id: rdlt
-    #     client_secret: change-me
-    #     scopes: [read:all]
-    #     audience: https://api.example.com
-    #     expiry_margin_secs: 60
+      # `none` is spelled out to show where credentials WOULD go.
+      # Anything secret belongs under `auth:`, never in `headers:` or
+      # `params:` — only `auth:` values are Secret-wrapped and masked
+      # (a credential-shaped header name is refused with a pointer
+      # here). Exactly one form:
+      auth: none
+      # auth:
+      #   bearer:
+      #     token: sk-live-...
+      # auth:
+      #   header:
+      #     name: X-Custom-Auth
+      #     value: t0ps3cret
+      # auth:
+      #   basic:
+      #     username: svc-rdlt
+      #     password: change-me
+      # auth:
+      #   api_key:
+      #     name: api_key
+      #     key: k-123
+      #     location: header          # header (default) | query
+      # auth:
+      #   oauth2_client_credentials:
+      #     token_url: https://auth.example.com/oauth/token
+      #     client_id: rdlt
+      #     client_secret: change-me
+      #     scopes: [read:all]
+      #     audience: https://api.example.com
+      #     expiry_margin_secs: 60
 
-    # Source-level defaults, merged UNDER per-stream values.
-    # headers:
-    #   User-Agent: rdlt-example
-    # params:
-    #   locale: en
+      # Source-level defaults, merged UNDER per-stream values.
+      # headers:
+      #   User-Agent: rdlt-example
+      # params:
+      #   locale: en
 
-    # Be a good citizen of someone else's free API: one request at a
-    # time, with a floor between sends. `max_concurrency` caps
-    # parent-child fan-out; streams themselves read sequentially.
-    max_concurrency: 1
-    min_request_interval_ms: 200
+      # Be a good citizen of someone else's free API: one request at a
+      # time, with a floor between sends. `max_concurrency` caps
+      # parent-child fan-out; streams themselves read sequentially.
+      max_concurrency: 1
+      min_request_interval_ms: 200
 
-    # The service's Retry-After is honoured up to this cap.
-    # retry_after_cap_secs: 300
-    # Per-read deadline; resets after each successful read.
-    # request_timeout_secs: 300
-    # Loop guard: a paginator that never ends is a typed error.
-    # max_pages: 10000
+      # The service's Retry-After is honoured up to this cap.
+      # retry_after_cap_secs: 300
+      # Per-read deadline; resets after each successful read.
+      # request_timeout_secs: 300
+      # Loop guard: a paginator that never ends is a typed error.
+      # max_pages: 10000
 
-    streams:
-      - name: pokemon
-        path: /pokemon
+      streams:
+        - name: pokemon
+          path: /pokemon
 
-        # PokéAPI answers {count, next, previous, results:[...]} — the
-        # rows are under `results`, not at the top level.
-        records_path: results
+          # PokéAPI answers {count, next, previous, results:[...]} — the
+          # rows are under `results`, not at the top level.
+          records_path: results
 
-        # It hands back a fully-formed `next` URL, so follow that
-        # rather than doing arithmetic on offset/limit. When an API
-        # gives you the next link, using it is both simpler and less
-        # likely to be wrong. The seven families:
-        pagination:
-          type: next_url
-          next_url_path: next
-        # pagination:
-        #   type: none               # single request (the default)
-        # pagination:
-        #   type: page
-        #   page_param: page
-        #   start: 1
-        #   total_pages_path: meta.total_pages   # pick ONE stop,
-        #   total_count_path: meta.total         # not both
-        # pagination:
-        #   type: offset
-        #   offset_param: offset
-        #   limit_param: limit
-        #   page_size: 100
-        #   total_count_path: count
-        # pagination:
-        #   type: cursor             # cursor in the response BODY
-        #   cursor_path: meta.next_cursor
-        #   cursor_param: cursor
-        # pagination:
-        #   type: header_cursor      # cursor in a response HEADER
-        #   header: X-Next-Cursor
-        #   cursor_param: cursor
-        # pagination:
-        #   type: link_header        # RFC 5988 Link: <...>; rel="next"
+          # It hands back a fully-formed `next` URL, so follow that
+          # rather than doing arithmetic on offset/limit. When an API
+          # gives you the next link, using it is both simpler and less
+          # likely to be wrong. The seven families:
+          pagination:
+            type: next_url
+            next_url_path: next
+          # pagination:
+          #   type: none               # single request (the default)
+          # pagination:
+          #   type: page
+          #   page_param: page
+          #   start: 1
+          #   total_pages_path: meta.total_pages   # pick ONE stop,
+          #   total_count_path: meta.total         # not both
+          # pagination:
+          #   type: offset
+          #   offset_param: offset
+          #   limit_param: limit
+          #   page_size: 100
+          #   total_count_path: count
+          # pagination:
+          #   type: cursor             # cursor in the response BODY
+          #   cursor_path: meta.next_cursor
+          #   cursor_param: cursor
+          # pagination:
+          #   type: header_cursor      # cursor in a response HEADER
+          #   header: X-Next-Cursor
+          #   cursor_param: cursor
+          # pagination:
+          #   type: link_header        # RFC 5988 Link: <...>; rel="next"
 
-        params:
-          limit: "100"
+          params:
+            limit: "100"
 
-        # Per-stream headers merge OVER source-level ones.
-        # headers:
-        #   Accept: application/json
+          # Per-stream headers merge OVER source-level ones.
+          # headers:
+          #   Accept: application/json
 
-        # POST endpoints: pagination params are set INTO the body,
-        # which must then be an object.
-        # method: post
-        # body:
-        #   query: "orders"
+          # POST endpoints: pagination params are set INTO the body,
+          # which must then be an object.
+          # method: post
+          # body:
+          #   query: "orders"
 
-        # Each row is {name, url}; `name` is unique and stable, which
-        # makes re-runs idempotent instead of appending duplicates.
-        primary_key: [name]
+          # Each row is {name, url}; `name` is unique and stable, which
+          # makes re-runs idempotent instead of appending duplicates.
+          primary_key: [name]
 
-        # Incremental reads for APIs that filter by a since-param.
-        # (PokéAPI has none, so this stays off here.)
-        # incremental:
-        #   cursor_field: updated_at    # field on each record
-        #   start_param: since          # request param for resume
-        #   initial_value: "2024-01-01T00:00:00Z"
-        #   end_param: until            # closed windows: both or
-        #   end_value: "2026-01-01T00:00:00Z"   # neither
+          # Incremental reads for APIs that filter by a since-param.
+          # (PokéAPI has none, so this stays off here.)
+          # incremental:
+          #   cursor_field: updated_at    # field on each record
+          #   start_param: since          # request param for resume
+          #   initial_value: "2024-01-01T00:00:00Z"
+          #   end_param: until            # closed windows: both or
+          #   end_value: "2026-01-01T00:00:00Z"   # neither
 
-        # First matching action wins; each needs a status and/or a
-        # body substring (first 64 KiB).
-        # response_actions:
-        #   - status: 404
-        #     action: ignore           # treat as an empty page
-        #   - status: 403
-        #     content_contains: "expired trial"
-        #     action: end_stream       # clean end of stream
-        #   - status: 200
-        #     content_contains: "\"errors\":"
-        #     action: error            # explicit fatal
+          # First matching action wins; each needs a status and/or a
+          # body substring (first 64 KiB).
+          # response_actions:
+          #   - status: 404
+          #     action: ignore           # treat as an empty page
+          #   - status: 403
+          #     content_contains: "expired trial"
+          #     action: end_stream       # clean end of stream
+          #   - status: 200
+          #     content_contains: "\"errors\":"
+          #     action: error            # explicit fatal
 
-        # Per-column parsing out of the closed hint table:
-        # bool int64 float64 utf8 timestamp_tz date time uuid json
-        # type_hints:
-        #   url: utf8
+          # Per-column parsing out of the closed hint table:
+          # bool int64 float64 utf8 timestamp_tz date time uuid json
+          # type_hints:
+          #   url: utf8
 
-      # A CHILD stream: one request per parent record, `{name}`
-      # substituted from it. Uncomment to fetch every Pokémon's full
-      # detail record — 1,351 requests, minutes at the polite pacing
-      # above, which is why it ships commented.
-      # - name: pokemon_detail
-      #   path: /pokemon/{name}
-      #   parent:
-      #     stream: pokemon
-      #     placeholders:
-      #       name: name             # {token} -> parent field (dot path)
-      #     include: [url]           # lands as _parent_url
-      #   primary_key: [id]
+        # A CHILD stream: one request per parent record, `{name}`
+        # substituted from it. Uncomment to fetch every Pokémon's full
+        # detail record — 1,351 requests, minutes at the polite pacing
+        # above, which is why it ships commented.
+        # - name: pokemon_detail
+        #   path: /pokemon/{name}
+        #   parent:
+        #     stream: pokemon
+        #     placeholders:
+        #       name: name             # {token} -> parent field (dot path)
+        #     include: [url]           # lands as _parent_url
+        #   primary_key: [id]
 
 destination:
-  file:
-    path: examples/pokemon-to-jsonl/out
-    format: jsonl
+  connector:
+    id: io.rapidbyte.file
+    config:
+      path: examples/pokemon-to-jsonl/out
+      format: jsonl
 
-    # How large an output FILE grows before it is closed and the next
-    # begun — measured on the ENCODED bytes, which only the
-    # destination can see. The default is 128 MiB (the size data
-    # lakes and query engines want); this dataset is ~250 KB TOTAL,
-    # so the default would give one file and demonstrate nothing.
-    # 128 KiB here makes the mechanics visible: each file spans TWO
-    # of the 400-row writes above and closes just after crossing the
-    # target, and the final file is smaller because the COMMIT closed
-    # it — no part ever spans a commit. Delete the block to get the
-    # default.
-    parts:
-      target_bytes: 131072
+      # How large an output FILE grows before it is closed and the next
+      # begun — measured on the ENCODED bytes, which only the
+      # destination can see. The default is 128 MiB (the size data
+      # lakes and query engines want); this dataset is ~250 KB TOTAL,
+      # so the default would give one file and demonstrate nothing.
+      # 128 KiB here makes the mechanics visible: each file spans TWO
+      # of the 400-row writes above and closes just after crossing the
+      # target, and the final file is smaller because the COMMIT closed
+      # it — no part ever spans a commit. Delete the block to get the
+      # default.
+      parts:
+        target_bytes: 131072

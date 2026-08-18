@@ -31,146 +31,153 @@ write_mode: replace
 #   every_seconds: 900
 
 source:
-  # Inline here; every source also accepts a bare string PATH instead
-  # — a separate YAML/JSON document with the identical shape, resolved
-  # relative to this pipeline file's own directory, better once
-  # credentials should live outside the pipeline file:
+  # The config is inline here; `config:` also accepts a bare string
+  # PATH instead — a separate YAML/JSON document with the identical
+  # shape, resolved relative to this pipeline file's own directory,
+  # better once credentials should live outside the pipeline file:
   #
-  #   postgres: postgres.yaml
-  postgres:
-    # libpq-style connection string or URL. `sslmode` up to `require`
-    # may be set here; the verify-* modes need the `tls:` block.
-    conn: host=127.0.0.1 port=15432 user=rdlt password=rdlt dbname=shop
+  #   source:
+  #     connector:
+  #       id: io.rapidbyte.postgres
+  #       config: postgres.yaml
+  connector:
+    id: io.rapidbyte.postgres
+    config:
+      # libpq-style connection string or URL. `sslmode` up to `require`
+      # may be set here; the verify-* modes need the `tls:` block.
+      conn: host=127.0.0.1 port=15432 user=rdlt password=rdlt dbname=shop
 
-    # The reflection scope; bare table names below resolve inside it.
-    schema: public
+      # The reflection scope; bare table names below resolve inside it.
+      schema: public
 
-    # Whether schema-wide discovery also captures views/matviews.
-    # Only meaningful when `tables:` is ABSENT (absent = discover
-    # every table in the schema; present = exactly this list).
-    # include_views: true
+      # Whether schema-wide discovery also captures views/matviews.
+      # Only meaningful when `tables:` is ABSENT (absent = discover
+      # every table in the schema; present = exactly this list).
+      # include_views: true
 
-    tables:
-      - name: orders
-        # Incremental reads — only rows whose cursor column is above
-        # the last checkpoint — pair with `append` or `merge`. Under
-        # `replace` (this pipeline) the engine reads FULL by
-        # definition: a mirror rebuilt from only-the-new-rows would
-        # lose every old one, so the cursor is deliberately not
-        # applied. Uncomment together with a write_mode change; the
-        # oracle example's README walks through the merge pairing.
-        # cursor:
-        #   column: updated_at
-        #   # First-run lower bound; absent = full initial load.
-        #   initial_value: "2024-01-01T00:00:00Z"
-        #   # Resume edge: inclusive (>=, default) | exclusive (>).
-        #   boundary: inclusive
-        #   # max ascends (default); min descends.
-        #   direction: max
-        #   # Optional upper bound and ITS edge (default exclusive).
-        #   end_value: "2030-01-01T00:00:00Z"
-        #   end_bound: exclusive
-        #   # NULL cursors: exclude (default) | include | error.
-        #   nulls: exclude
-        #   # Attribution window for late rows: re-read this far below
-        #   # the watermark. Duration for time cursors ("90s", "5m",
-        #   # "2h", "1d"), plain magnitude for numeric ("1000").
-        #   # Needs an inclusive boundary + a primary key.
-        #   lag: "5m"
+      tables:
+        - name: orders
+          # Incremental reads — only rows whose cursor column is above
+          # the last checkpoint — pair with `append` or `merge`. Under
+          # `replace` (this pipeline) the engine reads FULL by
+          # definition: a mirror rebuilt from only-the-new-rows would
+          # lose every old one, so the cursor is deliberately not
+          # applied. Uncomment together with a write_mode change; the
+          # oracle example's README walks through the merge pairing.
+          # cursor:
+          #   column: updated_at
+          #   # First-run lower bound; absent = full initial load.
+          #   initial_value: "2024-01-01T00:00:00Z"
+          #   # Resume edge: inclusive (>=, default) | exclusive (>).
+          #   boundary: inclusive
+          #   # max ascends (default); min descends.
+          #   direction: max
+          #   # Optional upper bound and ITS edge (default exclusive).
+          #   end_value: "2030-01-01T00:00:00Z"
+          #   end_bound: exclusive
+          #   # NULL cursors: exclude (default) | include | error.
+          #   nulls: exclude
+          #   # Attribution window for late rows: re-read this far below
+          #   # the watermark. Duration for time cursors ("90s", "5m",
+          #   # "2h", "1d"), plain magnitude for numeric ("1000").
+          #   # Needs an inclusive boundary + a primary key.
+          #   lag: "5m"
 
-        # Overrides the reflected primary key.
-        # primary_key: [order_id]
+          # Overrides the reflected primary key.
+          # primary_key: [order_id]
 
-        # Column selection — the two are mutually exclusive.
-        # included_columns: [order_id, amount, status, updated_at]
-        # excluded_columns: [internal_note]
+          # Column selection — the two are mutually exclusive.
+          # included_columns: [order_id, amount, status, updated_at]
+          # excluded_columns: [internal_note]
 
-        # Per-column conversions out of the closed table:
-        # bool int64 float64 utf8 binary timestamp_tz timestamp_naive
-        # date time uuid json decimal(p,s)
-        # type_hints:
-        #   amount: "decimal(12,2)"
+          # Per-column conversions out of the closed table:
+          # bool int64 float64 utf8 binary timestamp_tz timestamp_naive
+          # date time uuid json decimal(p,s)
+          # type_hints:
+          #   amount: "decimal(12,2)"
 
-      - name: customers
+        - name: customers
 
-    # A stream per SQL statement, always run as
-    # `SELECT * FROM (sql) AS q`. Shares the cursor / primary_key /
-    # type_hints vocabulary with tables.
-    queries:
-      - name: order_totals
-        sql: >-
-          SELECT c.region, count(*) AS orders, sum(o.amount) AS total
-          FROM orders o JOIN customers c USING (customer_id)
-          GROUP BY c.region
+      # A stream per SQL statement, always run as
+      # `SELECT * FROM (sql) AS q`. Shares the cursor / primary_key /
+      # type_hints vocabulary with tables.
+      queries:
+        - name: order_totals
+          sql: >-
+            SELECT c.region, count(*) AS orders, sum(o.amount) AS total
+            FROM orders o JOIN customers c USING (customer_id)
+            GROUP BY c.region
 
-    # TLS posture; the block may STRENGTHEN a conn-string sslmode,
-    # never weaken it. Modes: disable | prefer | require | verify_ca
-    # | verify_full. PEM values are a path or inline `-----BEGIN…`.
-    # tls:
-    #   mode: verify_full
-    #   root_cert: /etc/ssl/certs/corp-root.pem
-    #   client_cert: /etc/rdlt/client.crt      # mTLS: both or neither
-    #   client_key: /etc/rdlt/client.key
+      # TLS posture; the block may STRENGTHEN a conn-string sslmode,
+      # never weaken it. Modes: disable | prefer | require | verify_ca
+      # | verify_full. PEM values are a path or inline `-----BEGIN…`.
+      # tls:
+      #   mode: verify_full
+      #   root_cert: /etc/ssl/certs/corp-root.pem
+      #   client_cert: /etc/rdlt/client.crt      # mTLS: both or neither
+      #   client_key: /etc/rdlt/client.key
 
-    # Change data capture through a replication slot. When present,
-    # EVERY configured table is captured via the slot; `cursor` and
-    # `cdc` are mutually exclusive per table.
-    # cdc:
-    #   slot: rdlt_shop                # single consumer per slot
-    #   publication: rdlt_shop         # must cover every CDC table
-    #   create_if_missing: true        # rdlt never DROPS them
-    #   mode: catchup                  # catchup (cron-able) | tail
-    #   idle_wait: "1s"                # tail-mode quiet wait
-    #   flag_column: _rdlt_deleted     # TRUE on deletes, NULL else
-    #   ack: auto                      # auto | off (off retains WAL!)
+      # Change data capture through a replication slot. When present,
+      # EVERY configured table is captured via the slot; `cursor` and
+      # `cdc` are mutually exclusive per table.
+      # cdc:
+      #   slot: rdlt_shop                # single consumer per slot
+      #   publication: rdlt_shop         # must cover every CDC table
+      #   create_if_missing: true        # rdlt never DROPS them
+      #   mode: catchup                  # catchup (cron-able) | tail
+      #   idle_wait: "1s"                # tail-mode quiet wait
+      #   flag_column: _rdlt_deleted     # TRUE on deletes, NULL else
+      #   ack: auto                      # auto | off (off retains WAL!)
 
-    # Batch shaping out of the COPY decoder.
-    # batch_target_bytes: 8388608     # cut a batch at 8 MiB
-    # batch_max_rows: 65536
+      # Batch shaping out of the COPY decoder.
+      # batch_target_bytes: 8388608     # cut a batch at 8 MiB
+      # batch_max_rows: 65536
 
 destination:
   # This half is THE reference for the file DESTINATION vocabulary.
-  file:
-    path: examples/postgres-to-parquet/out
+  connector:
+    id: io.rapidbyte.file
+    config:
+      path: examples/postgres-to-parquet/out
 
-    # parquet (the default) | jsonl.
-    format: parquet
+      # parquet (the default) | jsonl.
+      format: parquet
 
-    # ONE column; directories are BARE values
-    # (`<table>/<value>/part-...`), never Hive `col=value`; NULL rows
-    # land under `__null__`. The column must exist in EVERY stream
-    # written, which is why this stays off here (customers has no
-    # `status`).
-    # partition_by: status
+      # ONE column; directories are BARE values
+      # (`<table>/<value>/part-...`), never Hive `col=value`; NULL rows
+      # land under `__null__`. The column must exist in EVERY stream
+      # written, which is why this stays off here (customers has no
+      # `status`).
+      # partition_by: status
 
-    # Parquet writer tuning; absent = compressed defaults (snappy,
-    # dictionary on, 64 KiB dictionary page cap).
-    parquet:
-      # uncompressed | snappy | gzip | lz4_raw | zstd | brotli.
-      compression: zstd
-      # Only gzip/zstd/brotli take a level; naming one beside snappy
-      # or lz4_raw is refused rather than silently dropped.
-      compression_level: 3
-      # dictionary_enabled: true
-      # dictionary_page_size_limit: 65536
-      # data_page_size_limit: 1048576
-      # max_row_group_rows: 1048576   # rows, not bytes
+      # Parquet writer tuning; absent = compressed defaults (snappy,
+      # dictionary on, 64 KiB dictionary page cap).
+      parquet:
+        # uncompressed | snappy | gzip | lz4_raw | zstd | brotli.
+        compression: zstd
+        # Only gzip/zstd/brotli take a level; naming one beside snappy
+        # or lz4_raw is refused rather than silently dropped.
+        compression_level: 3
+        # dictionary_enabled: true
+        # dictionary_page_size_limit: 65536
+        # data_page_size_limit: 1048576
+        # max_row_group_rows: 1048576   # rows, not bytes
 
-    # Output FILE sizing — encoded bytes, the thing `batch_policy`
-    # cannot see. Defaults shown; see pokemon-to-jsonl for a live
-    # scaled-down demonstration.
-    # parts:
-    #   target_bytes: 134217728      # ~128 MiB files (the default)
-    #   roll_after_seconds: 900      # close a slow file on time too
-    #   max_open_bytes: 536870912    # memory valve across open parts
+      # Output FILE sizing — encoded bytes, the thing `batch_policy`
+      # cannot see. Defaults shown; see pokemon-to-jsonl for a live
+      # scaled-down demonstration.
+      # parts:
+      #   target_bytes: 134217728      # ~128 MiB files (the default)
+      #   roll_after_seconds: 900      # close a slow file on time too
+      #   max_open_bytes: 536870912    # memory valve across open parts
 
-    # Writing to an object store instead of the local filesystem:
-    # location:
-    #   s3:
-    #     endpoint: http://127.0.0.1:9000
-    #     bucket: lake
-    #     region: us-east-1          # S3-compatibles often ignore it
-    #     access_key: minioadmin
-    #     secret_key: minioadmin
-    #     path_style: true           # the self-hosted-server form
-    #     unsigned_payload: false    # https-only when true
+      # Writing to an object store instead of the local filesystem:
+      # location:
+      #   s3:
+      #     endpoint: http://127.0.0.1:9000
+      #     bucket: lake
+      #     region: us-east-1          # S3-compatibles often ignore it
+      #     access_key: minioadmin
+      #     secret_key: minioadmin
+      #     path_style: true           # the self-hosted-server form
+      #     unsigned_payload: false    # https-only when true

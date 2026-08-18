@@ -22,72 +22,78 @@ workdir: examples/oracle-to-jsonl/.rdlt
 write_mode: append
 
 source:
-  # Written INLINE. Every connector also accepts a bare string PATH
-  # instead — resolved relative to this pipeline file's own directory
-  # — worth preferring here, because the password below is a
-  # credential sitting in the pipeline file. A separate document can
-  # be gitignored on its own:
+  # The config is written INLINE. `config:` also accepts a bare
+  # string PATH instead — resolved relative to this pipeline file's
+  # own directory — worth preferring here, because the password below
+  # is a credential sitting in the pipeline file. A separate document
+  # can be gitignored on its own:
   #
   #   source:
-  #     oracle: oracle.yaml
-  oracle:
-    # These values match compose.yaml; edit them for a real estate.
-    host: 127.0.0.1
-    port: 11521
+  #     connector:
+  #       id: io.rapidbyte.oracle
+  #       config: oracle.yaml
+  connector:
+    id: io.rapidbyte.oracle
+    config:
+      # These values match compose.yaml; edit them for a real estate.
+      host: 127.0.0.1
+      port: 11521
 
-    # Name the instance ONE way. `service` is the modern spelling (a
-    # PDB service such as FREEPDB1); `sid` is the legacy form older
-    # estates still hand out. Setting both is refused, because they
-    # are two names for one thing and disagreeing is worse than
-    # missing.
-    service: FREEPDB1
-    # sid: ORCL
+      # Name the instance ONE way. `service` is the modern spelling (a
+      # PDB service such as FREEPDB1); `sid` is the legacy form older
+      # estates still hand out. Setting both is refused, because they
+      # are two names for one thing and disagreeing is worse than
+      # missing.
+      service: FREEPDB1
+      # sid: ORCL
 
-    user: rdlt
-    password: rdlt
+      user: rdlt
+      password: rdlt
 
-    streams:
-      - name: employees
-        # Bare names fold UPPER-CASE, as Oracle's own rules do, so
-        # `employees` reaches EMPLOYEES. A schema-qualified name works
-        # too — `HR.EMPLOYEES` — which is the ordinary shape when a
-        # read-only user reads an app schema. To reach a table created
-        # case-sensitively, quote it: '"lower_t"'.
-        table: employees
+      streams:
+        - name: employees
+          # Bare names fold UPPER-CASE, as Oracle's own rules do, so
+          # `employees` reaches EMPLOYEES. A schema-qualified name works
+          # too — `HR.EMPLOYEES` — which is the ordinary shape when a
+          # read-only user reads an app schema. To reach a table created
+          # case-sensitively, quote it: '"lower_t"'.
+          table: employees
 
-        # Keyed identity. REQUIRED for `write_mode: merge`, because
-        # the rows cross as Arrow and there is no content-hash
-        # fallback for a typed stream.
-        primary_key: [employee_id]
+          # Keyed identity. REQUIRED for `write_mode: merge`, because
+          # the rows cross as Arrow and there is no content-hash
+          # fallback for a typed stream.
+          primary_key: [employee_id]
 
-        # Incremental reads: only rows whose cursor column is above
-        # the last checkpoint. The column must be NOT NULL — a
-        # watermark cannot order a NULL, and admitting one would
-        # silently skip those rows on every later run, so it is
-        # refused up front. Delete the line to read in full each run.
-        cursor: updated_at
+          # Incremental reads: only rows whose cursor column is above
+          # the last checkpoint. The column must be NOT NULL — a
+          # watermark cannot order a NULL, and admitting one would
+          # silently skip those rows on every later run, so it is
+          # refused up front. Delete the line to read in full each run.
+          cursor: updated_at
 
-    # Tuning is optional; every knob has a working default and each
-    # maps to the JDBC parameter an Oracle estate already tunes.
-    # tuning:
-    #   page_rows: 1000            # defaultRowPrefetch
-    #   batch_rows: 8192           # rows per Arrow batch downstream
-    #   read_timeout_ms: 600000    # oracle.jdbc.ReadTimeout
-    #   connect_timeout_ms: 60000  # oracle.net.CONNECT_TIMEOUT
-    #   keepalive_minutes: 1       # oracle.net.keepAlive / EXPIRE_TIME
-    #   statement_cache: 20        # implicitStatementCacheSize
+      # Tuning is optional; every knob has a working default and each
+      # maps to the JDBC parameter an Oracle estate already tunes.
+      # tuning:
+      #   page_rows: 1000            # defaultRowPrefetch
+      #   batch_rows: 8192           # rows per Arrow batch downstream
+      #   read_timeout_ms: 600000    # oracle.jdbc.ReadTimeout
+      #   connect_timeout_ms: 60000  # oracle.net.CONNECT_TIMEOUT
+      #   keepalive_minutes: 1       # oracle.net.keepAlive / EXPIRE_TIME
+      #   statement_cache: 20        # implicitStatementCacheSize
 
 destination:
-  file:
-    path: examples/oracle-to-jsonl/out
-    format: jsonl
+  connector:
+    id: io.rapidbyte.file
+    config:
+      path: examples/oracle-to-jsonl/out
+      format: jsonl
 
-    # Output file sizing is optional; the default already targets
-    # 128 MiB files — the size data lakes and query engines want — so
-    # a source paging a few thousand rows at a time still lands in
-    # lake-sized files rather than one file per page. Uncomment to
-    # size differently, or to close a long-lived file on time so a
-    # slow incremental stream ships what it has:
-    # parts:
-    #   target_bytes: 134217728    # ~128 MB (the default)
-    #   roll_after_seconds: 900    # … or every 15 min, whichever first
+      # Output file sizing is optional; the default already targets
+      # 128 MiB files — the size data lakes and query engines want — so
+      # a source paging a few thousand rows at a time still lands in
+      # lake-sized files rather than one file per page. Uncomment to
+      # size differently, or to close a long-lived file on time so a
+      # slow incremental stream ships what it has:
+      # parts:
+      #   target_bytes: 134217728    # ~128 MB (the default)
+      #   roll_after_seconds: 900    # … or every 15 min, whichever first
