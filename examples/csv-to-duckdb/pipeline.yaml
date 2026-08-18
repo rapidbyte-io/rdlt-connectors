@@ -10,7 +10,7 @@
 # decorative.
 pipeline: csv-to-duckdb
 
-workdir: examples/csv-to-duckdb/.rdlt
+workdir: .rdlt
 
 # Append accumulates across runs — but re-running does NOT duplicate:
 # the file source's own cursor knows a fully-read file and re-reads

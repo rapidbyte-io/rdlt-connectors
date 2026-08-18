@@ -9,7 +9,7 @@
 # rows, not 80.
 pipeline: jsonl-to-postgres
 
-workdir: examples/jsonl-to-postgres/.rdlt
+workdir: .rdlt
 
 # Merge upserts on the key, which must agree with the stream's
 # declared `primary_key`. The other modes are `append` and `replace`.

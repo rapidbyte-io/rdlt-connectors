@@ -11,7 +11,7 @@
 # postgres-to-parquet is its full tour.
 pipeline: postgres-to-iceberg
 
-workdir: examples/postgres-to-iceberg/.rdlt
+workdir: .rdlt
 
 # Iceberg supports Append this release; Replace and Merge are typed
 # refusals, never silent narrowing. Re-running does not duplicate:

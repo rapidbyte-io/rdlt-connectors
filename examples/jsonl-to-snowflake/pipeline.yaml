@@ -8,7 +8,7 @@
 # THE reference for the snowflake DESTINATION vocabulary.
 pipeline: jsonl-to-snowflake
 
-workdir: examples/jsonl-to-snowflake/.rdlt
+workdir: .rdlt
 
 # Merge upserts on the key; `append` and `replace` also work here.
 write_mode:

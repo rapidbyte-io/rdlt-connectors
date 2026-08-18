@@ -9,7 +9,7 @@
 # Instant Client, loaded at runtime — see examples/README.md.
 pipeline: oracle-to-jsonl
 
-workdir: examples/oracle-to-jsonl/.rdlt
+workdir: .rdlt
 
 # Append + cursor is the incremental pairing for a FILE destination:
 # the first run reads all 250 rows, later runs append only what

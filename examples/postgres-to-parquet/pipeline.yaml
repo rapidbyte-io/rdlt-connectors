@@ -9,7 +9,7 @@
 # uses it, commented with a real value where it does not.
 pipeline: postgres-to-parquet
 
-workdir: examples/postgres-to-parquet/.rdlt
+workdir: .rdlt
 
 # `replace` mirrors the tables each run; `append` accumulates;
 # `merge: {key: [...]}` upserts (the key must agree with the stream's

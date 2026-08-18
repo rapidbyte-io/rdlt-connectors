@@ -35,8 +35,11 @@ name it once in `~/.config/containers/containers.conf` so
 compose_providers = ["/home/you/.local/bin/podman-compose"]
 ```
 
-Paths in the pipeline files are relative to THIS repository's root, so
-run them from here.
+`workdir:` and a path-form `config:` resolve beside the pipeline file
+itself, wherever you run from. Paths INSIDE a connector's config —
+sample data, output directories, database files — resolve against the
+directory you run from, so run the examples from THIS repository's
+root.
 
 ## Installing the binaries
 
