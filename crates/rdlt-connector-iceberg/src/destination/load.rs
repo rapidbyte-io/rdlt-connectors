@@ -19,6 +19,7 @@
 //! ruling in 042 because the wire contract's receipt choreography
 //! demands a durable load-level receipt.)
 
+use super::parts;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -26,11 +27,15 @@ use async_trait::async_trait;
 use iceberg::transaction::{ApplyTransactionAction as _, Transaction};
 use iceberg::{Catalog, NamespaceIdent, TableIdent};
 use rdlt_connector_sdk::destination::Backend;
-use rdlt_connector_sdk::spi::core::naming::ident_hash;
+use rdlt_connector_sdk::spi::core::schema::ident_hash;
 use rdlt_connector_sdk::spi::core::{
-    LoadId, PipelineId, StateDoc, TableName, TableSchema, WriteMode, crash_point,
+    commit::WriteMode, crash_point, id::LoadId, id::PipelineId, id::TableName, schema::TableSchema,
+    state::StateDoc,
 };
-use rdlt_connector_sdk::spi::{CommitMeta, CommitReceipt, DestinationError, RecordBatch};
+use rdlt_connector_sdk::spi::{
+    arrow::RecordBatch, core::commit::CommitMeta, core::commit::CommitReceipt,
+    error::DestinationError,
+};
 
 use super::client::{classify, fatal};
 use super::commit::{Identity, Plan, append_commit, commit_with_retry, load_committed};
@@ -54,8 +59,8 @@ pub(super) const SCOPE_HASH_LEN: usize = 32;
 /// Part sizing and its telemetry, grouped: the options that decide
 /// when files roll travel with the listener told when they close.
 pub(super) struct PartsWiring {
-    pub(super) options: rdlt_connector_sdk::spi::PartOptions,
-    pub(super) events: Option<rdlt_connector_sdk::spi::PartEventFn>,
+    pub(super) options: parts::Options,
+    pub(super) events: Option<rdlt_connector_sdk::spi::destination::PartEventFn>,
 }
 
 /// One stream table's session state.
@@ -94,13 +99,13 @@ pub struct Load {
     /// Output file sizing. `target_bytes` reaches the library's own
     /// rolling writer; `roll_after_seconds` is applied here, since the
     /// library has no time trigger.
-    pub(super) parts: rdlt_connector_sdk::spi::PartOptions,
+    pub(super) parts: parts::Options,
     /// Where closed data files are reported. Advisory. One caveat this
     /// destination owns: the LIBRARY rolls files on size internally
     /// and surfaces them only when the writer closes, so every file of
     /// one writer reports the close's cause rather than its own —
     /// sizes are exact, attribution is per-window.
-    pub(super) part_events: Option<rdlt_connector_sdk::spi::PartEventFn>,
+    pub(super) part_events: Option<rdlt_connector_sdk::spi::destination::PartEventFn>,
     tables: BTreeMap<TableName, TableState>,
 }
 
@@ -158,17 +163,17 @@ impl Load {
     /// associated fn over a cloned listener handle, because the call
     /// sites hold `&mut` borrows into the table map.
     fn report_closed(
-        listener: &Option<rdlt_connector_sdk::spi::PartEventFn>,
+        listener: &Option<rdlt_connector_sdk::spi::destination::PartEventFn>,
         stream: &TableName,
         files: &[iceberg::spec::DataFile],
-        reason: rdlt_connector_sdk::spi::PartCloseReason,
+        reason: rdlt_connector_sdk::spi::destination::PartCloseReason,
     ) {
         let Some(listener) = listener else {
             return;
         };
         for file in files {
-            listener(rdlt_connector_sdk::spi::PartClosed::new(
-                rdlt_connector_sdk::spi::core::TableName::new(stream.as_str()),
+            listener(rdlt_connector_sdk::spi::destination::PartClosed::new(
+                rdlt_connector_sdk::spi::core::id::TableName::new(stream.as_str()),
                 file.file_size_in_bytes(),
                 reason,
             ));
@@ -209,7 +214,7 @@ impl Load {
                     &self.part_events,
                     stream,
                     &closed,
-                    rdlt_connector_sdk::spi::PartCloseReason::Schema,
+                    rdlt_connector_sdk::spi::destination::PartCloseReason::Schema,
                 );
                 pending_files.extend(closed);
                 (None, None)
@@ -467,7 +472,7 @@ impl Load {
                     &listener,
                     table_name,
                     &closed,
-                    rdlt_connector_sdk::spi::PartCloseReason::Commit,
+                    rdlt_connector_sdk::spi::destination::PartCloseReason::Commit,
                 );
                 files.extend(closed);
                 state.writer_opened_at = None;
@@ -615,7 +620,7 @@ impl Backend for Load {
                 &listener,
                 table,
                 &closed,
-                rdlt_connector_sdk::spi::PartCloseReason::Time,
+                rdlt_connector_sdk::spi::destination::PartCloseReason::Time,
             );
             state.pending_files.extend(closed);
             state.writer_opened_at = None;
@@ -1015,7 +1020,7 @@ mod tests {
             LoadId::from("l"),
             writer_properties(&Default::default()).expect("props"),
             PartsWiring {
-                options: rdlt_connector_sdk::spi::PartOptions::default(),
+                options: parts::Options::default(),
                 events: None,
             },
         );
@@ -1079,15 +1084,16 @@ mod tests {
     /// files rather than fail.
     #[test]
     fn the_target_size_reaches_the_library_and_absence_never_rolls() {
-        use rdlt_connector_sdk::spi::PartOptions;
-
         // The shipping default: 128 MiB, NOT the library's own 512.
-        assert_eq!(PartOptions::default().target_file_size(), 128 * 1024 * 1024);
-        assert_eq!(PartOptions::unbounded().target_file_size(), usize::MAX);
         assert_eq!(
-            PartOptions {
+            parts::Options::default().target_file_size(),
+            128 * 1024 * 1024
+        );
+        assert_eq!(parts::Options::unbounded().target_file_size(), usize::MAX);
+        assert_eq!(
+            parts::Options {
                 target_bytes: Some(64 * 1024 * 1024),
-                ..PartOptions::default()
+                ..parts::Options::default()
             }
             .target_file_size(),
             64 * 1024 * 1024
@@ -1100,16 +1106,14 @@ mod tests {
     /// each side, and the two would disagree.
     #[test]
     fn the_time_threshold_is_answered_without_the_size_one() {
-        use rdlt_connector_sdk::spi::PartOptions;
-
-        let timed = PartOptions {
+        let timed = parts::Options {
             roll_after_seconds: Some(900),
-            ..PartOptions::default()
+            ..parts::Options::default()
         };
         assert!(!timed.rolls_on_time(899));
         assert!(timed.rolls_on_time(900));
         // The default names no time bound, so no elapsed time rolls.
-        assert!(!PartOptions::default().rolls_on_time(u64::MAX));
+        assert!(!parts::Options::default().rolls_on_time(u64::MAX));
     }
 
     /// 034: a writer retired ON TIME parks its files exactly as a
@@ -1117,7 +1121,6 @@ mod tests {
     #[tokio::test]
     async fn an_elapsed_writer_is_retired_and_its_files_parked() {
         use rdlt_connector_sdk::config::Document;
-        use rdlt_connector_sdk::spi::PartOptions;
 
         use super::super::testsupport::{ConflictCatalog, table_with_schema};
         use super::super::write::writer_properties;
@@ -1157,9 +1160,9 @@ mod tests {
             // but constructed directly it makes "already elapsed" the
             // condition under test without sleeping.
             PartsWiring {
-                options: PartOptions {
+                options: parts::Options {
                     roll_after_seconds: Some(0),
-                    ..PartOptions::default()
+                    ..parts::Options::default()
                 },
                 events: None,
             },
@@ -1303,7 +1306,7 @@ mod tests {
             LoadId::from("l"),
             writer_properties(&Default::default()).expect("props"),
             PartsWiring {
-                options: rdlt_connector_sdk::spi::PartOptions::default(),
+                options: parts::Options::default(),
                 events: None,
             },
         );

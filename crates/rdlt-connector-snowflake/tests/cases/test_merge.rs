@@ -3,9 +3,10 @@
 //! SQL alone carries correctness: upsert convergence, hard delete, and
 //! the scd2 single-instant boundary.
 
-use rdlt_connector_sdk::spi::core::WriteMode;
+use rdlt_connector_sdk::spi::core::commit::WriteMode;
 use rdlt_connector_snowflake::destination::{Shell, testhook};
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 use serde_json::json;
 
 use super::common::{KeyedSource, config_for, credentials, scratch_schema};

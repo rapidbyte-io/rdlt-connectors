@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use rdlt_connector::core::TableSchema;
+use rdlt_connector::core::schema::TableSchema;
 
 use crate::options::{AbsentPolicy, DestinationOptions, MergeStrategy};
 
@@ -31,7 +31,7 @@ impl<'a> TableFacts<'a> {
             has_identity: schema
                 .columns
                 .iter()
-                .any(|c| c.name == rdlt_connector::core::schema::system_columns::ID),
+                .any(|c| c.name == rdlt_connector::core::schema::system::ID),
             is_child: schema.parent.is_some(),
         }
     }

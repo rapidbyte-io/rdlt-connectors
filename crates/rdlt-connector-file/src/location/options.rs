@@ -182,7 +182,7 @@ mod tests {
         assert!(options.path_style);
         assert!(!options.unsigned_payload, "signing is the default");
         assert!(options.region.is_none());
-        let parsed: S3Options = serde_yaml::from_str(
+        let parsed: S3Options = serde_yaml_ng::from_str(
             "{endpoint: 'http://s3', bucket: b, access_key: ak, secret_key: sk}",
         )
         .expect("parses");

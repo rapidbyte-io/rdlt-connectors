@@ -18,7 +18,7 @@ use arrow::array::{
     RecordBatch, StringBuilder, TimestampMicrosecondBuilder,
 };
 use arrow::datatypes::{DataType, Schema, TimeUnit};
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 /// One column's in-progress Arrow array.
 enum Column {

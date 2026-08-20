@@ -9,7 +9,9 @@ use std::time::Duration;
 
 use rdlt_connector_rest::source::Config;
 use rdlt_connector_rest::source::Shell;
-use rdlt_connector_sdk::spi::{ReadRequest, Source, SourceError, records_channel};
+use rdlt_connector_sdk::spi::{
+    channel::records, error::SourceError, source::ReadRequest, source::Source,
+};
 use serde_json::json;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -30,7 +32,7 @@ async fn stalling_server(delay: Duration) -> MockServer {
 }
 
 async fn read_to_end(source: Shell) -> Result<(), SourceError> {
-    let (out, mut input) = records_channel(1 << 20);
+    let (out, mut input) = records(1 << 20);
     let spec = source.streams().await?[0].clone();
     let read = tokio::spawn(async move { source.read(ReadRequest::new(spec, None, out)).await });
     while input.recv().await.is_some() {}
@@ -67,7 +69,7 @@ fn a_zero_request_timeout_is_refused() {
     // Asserted through the CONFIG TYPE, not a rendered message. Matching the
     // message made this pass even with the whole field deleted, because
     // `deny_unknown_fields` echoes an unknown key straight back into its error.
-    let accepted: Config = serde_yaml::from_str(
+    let accepted: Config = serde_yaml_ng::from_str(
         "base_url: \"http://127.0.0.1:1\"\nrequest_timeout_secs: 30\nstreams:\n  - name: events\n    path: /events\n",
     )
     .expect("a positive deadline parses");
@@ -76,7 +78,7 @@ fn a_zero_request_timeout_is_refused() {
         "the field must exist and carry the configured value"
     );
 
-    let defaulted: Config = serde_yaml::from_str(
+    let defaulted: Config = serde_yaml_ng::from_str(
         "base_url: \"http://127.0.0.1:1\"\nstreams:\n  - name: events\n    path: /events\n",
     )
     .expect("the field defaults");
@@ -234,7 +236,7 @@ streams:
         .find(|s| s.name.as_str() == "issues")
         .expect("child stream")
         .clone();
-    let (out, mut input) = records_channel(1 << 20);
+    let (out, mut input) = records(1 << 20);
     let read = tokio::spawn(async move { source.read(ReadRequest::new(issues, None, out)).await });
     while input.recv().await.is_some() {}
     read.await.expect("join").expect("child read");

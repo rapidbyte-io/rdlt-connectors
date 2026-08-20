@@ -12,14 +12,19 @@
 //! which failures roll the unit back and discard staged parts, and
 //! which propagate bare, is recorded protocol behavior — not style.
 
+use super::parts;
 use std::collections::{BTreeMap, BTreeSet};
 
 use async_trait::async_trait;
 use rdlt_connector_sdk::destination::Backend;
 use rdlt_connector_sdk::spi::core::{
-    LoadId, PipelineId, StateDoc, TableName, TableSchema, WriteMode,
+    commit::WriteMode, id::LoadId, id::PipelineId, id::TableName, schema::TableSchema,
+    state::StateDoc,
 };
-use rdlt_connector_sdk::spi::{CommitMeta, CommitReceipt, DestinationError, RecordBatch};
+use rdlt_connector_sdk::spi::{
+    arrow::RecordBatch, core::commit::CommitMeta, core::commit::CommitReceipt,
+    error::DestinationError,
+};
 use rdlt_connector_sqlcore::plan::scope_replace_sql;
 use rdlt_connector_sqlcore::protocol::unit as protocol;
 use rdlt_connector_sqlcore::{
@@ -104,13 +109,13 @@ pub struct Load {
     /// and the SaaS round trip is the cost that matters.
     pub(super) pending: BTreeMap<TableName, (Vec<String>, Vec<Part>)>,
     /// How large a staged part grows before it is uploaded.
-    pub(super) parts: rdlt_connector_sdk::spi::PartOptions,
+    pub(super) parts: parts::Options,
     /// Parts still accumulating, keyed by DESTINATION table — the same
     /// key `pending` uses, so a part and the COPY that will name it
     /// cannot disagree about which table they belong to.
     pub(super) open: BTreeMap<String, encode::OpenPart>,
     /// Where closed parts are reported. Advisory.
-    pub(super) part_events: Option<rdlt_connector_sdk::spi::PartEventFn>,
+    pub(super) part_events: Option<rdlt_connector_sdk::spi::destination::PartEventFn>,
 }
 
 // Debug is the workspace lint's requirement; the executor handle and
@@ -211,7 +216,7 @@ impl Load {
     async fn close_part(
         &mut self,
         table: &str,
-        reason: rdlt_connector_sdk::spi::PartCloseReason,
+        reason: rdlt_connector_sdk::spi::destination::PartCloseReason,
     ) -> Result<(), DestinationError> {
         let Some(part) = self.open.remove(table) else {
             return Ok(());
@@ -242,8 +247,8 @@ impl Load {
         // Reported once UPLOADED — the bytes are final and the size is
         // the file's own, never an estimate.
         if let Some(listener) = &self.part_events {
-            listener(rdlt_connector_sdk::spi::PartClosed::new(
-                rdlt_connector_sdk::spi::core::TableName::new(table),
+            listener(rdlt_connector_sdk::spi::destination::PartClosed::new(
+                rdlt_connector_sdk::spi::core::id::TableName::new(table),
                 encoded_bytes,
                 reason,
             ));
@@ -264,8 +269,11 @@ impl Load {
     /// COPY names whole staged files and a part still open has none.
     async fn close_all_parts(&mut self) -> Result<(), DestinationError> {
         for table in self.open.keys().cloned().collect::<Vec<_>>() {
-            self.close_part(&table, rdlt_connector_sdk::spi::PartCloseReason::Commit)
-                .await?;
+            self.close_part(
+                &table,
+                rdlt_connector_sdk::spi::destination::PartCloseReason::Commit,
+            )
+            .await?;
         }
         Ok(())
     }
@@ -287,8 +295,11 @@ impl Load {
             else {
                 return Ok(());
             };
-            self.close_part(&largest, rdlt_connector_sdk::spi::PartCloseReason::Budget)
-                .await?;
+            self.close_part(
+                &largest,
+                rdlt_connector_sdk::spi::destination::PartCloseReason::Budget,
+            )
+            .await?;
         }
     }
 
@@ -704,8 +715,11 @@ impl Backend for Load {
             .get(&key)
             .is_some_and(|part| part.shape_differs(&schema, &batch))
         {
-            self.close_part(&key, rdlt_connector_sdk::spi::PartCloseReason::Schema)
-                .await?;
+            self.close_part(
+                &key,
+                rdlt_connector_sdk::spi::destination::PartCloseReason::Schema,
+            )
+            .await?;
         }
         match self.open.get_mut(&key) {
             Some(part) => part.append(&schema, &batch)?,
@@ -718,9 +732,9 @@ impl Backend for Load {
         let (encoded, open_for) = (part.encoded_len(), part.open_for_secs());
         if self.parts.should_roll(encoded, open_for) {
             let reason = if self.parts.target_bytes.is_some_and(|t| encoded >= t.max(1)) {
-                rdlt_connector_sdk::spi::PartCloseReason::Target
+                rdlt_connector_sdk::spi::destination::PartCloseReason::Target
             } else {
-                rdlt_connector_sdk::spi::PartCloseReason::Time
+                rdlt_connector_sdk::spi::destination::PartCloseReason::Time
             };
             self.close_part(&key, reason).await?;
         }
@@ -1018,7 +1032,9 @@ mod tests {
 
     use std::sync::{Arc, Mutex};
 
-    use rdlt_connector_sdk::spi::core::{ColumnDef, ColumnType, LogicalType, Provenance};
+    use rdlt_connector_sdk::spi::core::{
+        schema::Column, schema::ColumnType, schema::Provenance, types::LogicalType,
+    };
 
     /// A scripted executor recording every statement it is handed.
     struct Recorder(Arc<Mutex<Vec<String>>>);
@@ -1080,7 +1096,7 @@ mod tests {
             single_unit_done: BTreeSet::new(),
             stage: Stage::new("p", "load-1"),
             pending: BTreeMap::new(),
-            parts: rdlt_connector_sdk::spi::PartOptions::default(),
+            parts: parts::Options::default(),
             open: BTreeMap::new(),
             part_events: None,
         };
@@ -1093,7 +1109,7 @@ mod tests {
             parent: None,
             columns: columns
                 .iter()
-                .map(|name| ColumnDef {
+                .map(|name| Column {
                     name: (*name).to_owned(),
                     column_type: ColumnType::scalar(LogicalType::Int64),
                     nullable: true,
@@ -1177,7 +1193,7 @@ mod tests {
         let wide = TableSchema {
             table: TableName::from("events"),
             parent: None,
-            columns: vec![ColumnDef {
+            columns: vec![Column {
                 name: "id".to_owned(),
                 column_type: ColumnType::scalar(LogicalType::Utf8),
                 nullable: true,

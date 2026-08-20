@@ -2,6 +2,7 @@
 //! (dedup_sort), scope-key replacement (merge_scope), the per-table
 //! single-unit rule, and the open-time validation matrix.
 
+use rdlt_testkit::memory::Source as MemorySource;
 use std::sync::Arc;
 
 use arrow_array::{BooleanArray, Int64Array, RecordBatch, StringArray};
@@ -11,9 +12,11 @@ use rdlt_connector_postgres::destination::{
     DedupSort, DestinationOptions, MergeStrategy, Postgres, SortOrder, TableOptions,
 };
 use rdlt_connector_sdk::spi::{
-    ConnectorSpec, Cursor, ReadRequest, Source, SourceError, StreamSpec,
+    core::cursor::Cursor, error::SourceError, source::ReadRequest, source::Source,
+    source::StreamSpec, spec::ConnectorSpec,
 };
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 use crate::cases::common;
 use rdlt_connector_postgres::fixtures::PostgresContainer;
@@ -61,6 +64,13 @@ struct UnitsSource {
 
 #[async_trait]
 impl Source for UnitsSource {
+    /// In-memory: the rows are already here, so there is nothing to
+    /// reach and nothing that could be misconfigured. Answering Ok is
+    /// the honest answer for this double, not a stub — a probe that
+    /// passes what the read then fails is what the clause forbids.
+    async fn check(&self) -> Result<(), SourceError> {
+        Ok(())
+    }
     fn spec(&self) -> ConnectorSpec {
         ConnectorSpec::new("refinements-test", "0.0.0")
     }
@@ -136,7 +146,7 @@ async fn run(
     units: Vec<Vec<Row>>,
 ) {
     let mut config = EngineConfig::new(format!("mr-{schema}"));
-    config = config.with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+    config = config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
         key: vec!["id".into()],
     });
     let units = units.iter().map(|unit| batch(unit)).collect();
@@ -175,7 +185,7 @@ async fn run_expect_error(
     units: Vec<Vec<Row>>,
 ) -> String {
     let mut config = EngineConfig::new(format!("mr-{schema}"));
-    config = config.with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+    config = config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
         key: vec!["id".into()],
     });
     let units = units.iter().map(|unit| batch(unit)).collect();
@@ -677,7 +687,7 @@ async fn refinement_options_validate_typed_at_open() {
     // Review F5: the options under a non-merge write mode are rejected,
     // never silently inert (the 008 F6 lesson).
     let mut config = EngineConfig::new("mr-inert");
-    config = config.with_write_mode(rdlt_connector_sdk::spi::WriteMode::Append);
+    config = config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Append);
     let units = one_row.iter().map(|unit| batch(unit)).collect();
     let error = Engine::new(
         config,
@@ -700,7 +710,6 @@ async fn refinement_options_validate_typed_at_open() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn refinement_options_reject_shredded_streams() {
-    use rdlt_testkit::MemorySource;
     use serde_json::json;
 
     let Some(container) = PostgresContainer::start().await else {
@@ -737,11 +746,11 @@ async fn refinement_options_reject_shredded_streams() {
             .expect("options")
             .into_shell();
         let mut config = EngineConfig::new(schema);
-        config = config.with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+        config = config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
             key: vec!["id".into()],
         });
         let source = MemorySource::single_stream(
-            rdlt_connector_sdk::spi::StreamSpec::new("users").with_primary_key(["id"]),
+            rdlt_connector_sdk::spi::source::StreamSpec::new("users").with_primary_key(["id"]),
             vec![json!({"id": 1, "seq": 2, "day": 3})],
         );
         let error = Engine::new(config, source, destination)

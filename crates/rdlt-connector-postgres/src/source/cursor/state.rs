@@ -16,7 +16,7 @@
 //! state or a full refresh is the recorded recovery. The Rust value
 //! vocabulary is [`Scalar`]; this module owns ONLY its persistence.
 
-use rdlt_connector_sdk::spi::{Cursor, SourceError};
+use rdlt_connector_sdk::spi::{core::cursor::Cursor, error::SourceError};
 use serde::{Deserialize, Serialize};
 
 use crate::source::errors::{self, Phase};

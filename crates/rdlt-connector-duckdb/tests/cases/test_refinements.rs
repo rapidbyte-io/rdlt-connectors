@@ -6,8 +6,8 @@
 //! shared with postgres, and the wordings asserted here are that shared
 //! surface reaching an operator through the v2 shell.
 
-use rdlt_connector_sdk::spi::StreamSpec;
-use rdlt_testkit::MemorySource;
+use rdlt_connector_sdk::spi::source::StreamSpec;
+use rdlt_testkit::memory::Source as MemorySource;
 use serde_json::json;
 
 use super::common::{

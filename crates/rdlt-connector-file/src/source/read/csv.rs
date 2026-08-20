@@ -15,7 +15,7 @@ use std::collections::BTreeMap;
 
 use bytes::Bytes;
 use rdlt_connector_sdk::source::Feed;
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 use super::open_decoded;
 use crate::format::{Codec, SLAB_BYTES, codec_of};
@@ -451,13 +451,13 @@ mod tests {
     #[tokio::test]
     async fn duplicate_header_names_are_refused() {
         use rdlt_connector_sdk::source::Feed;
-        use rdlt_connector_sdk::spi::records_channel;
+        use rdlt_connector_sdk::spi::channel::records;
 
         let dir = tempfile::tempdir().expect("dir");
         let path = dir.path().join("rows.csv");
         let bytes: &[u8] = b"id,name,id\n1,a,2\n";
         std::fs::write(&path, bytes).expect("plant");
-        let (out, _hold) = records_channel(1 << 20);
+        let (out, _hold) = records(1 << 20);
         let mut feed = Feed::new(out);
         let mut cursor = FileCursor::default();
         let task = FileTask {

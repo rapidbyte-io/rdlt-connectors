@@ -383,11 +383,11 @@ pub struct LiveProbe {
 }
 
 #[async_trait::async_trait]
-impl rdlt_testkit::TableProbe for LiveProbe {
+impl rdlt_testkit::conformance::destination::TableProbe for LiveProbe {
     async fn count(
         &self,
-        table: &rdlt_connector_sdk::spi::core::TableName,
-    ) -> Result<u64, rdlt_testkit::ProbeError> {
+        table: &rdlt_connector_sdk::spi::core::id::TableName,
+    ) -> Result<u64, rdlt_testkit::conformance::destination::ProbeError> {
         // Total records off the newest snapshot summary — the
         // catalog's own count, independent of the crate. A table with
         // no snapshots yet (or a 404 — no table at all) reads as 0;
@@ -402,24 +402,26 @@ impl rdlt_testkit::TableProbe for LiveProbe {
             .fixture
             .try_snapshot_summaries(&self.namespace, table.as_str())
             .await
-            .map_err(|message| rdlt_testkit::ProbeError { message })?;
+            .map_err(|message| rdlt_testkit::conformance::destination::ProbeError { message })?;
         let Some(newest) = summaries.last() else {
             return Ok(0);
         };
-        let total = newest
-            .get("total-records")
-            .ok_or_else(|| rdlt_testkit::ProbeError {
+        let total = newest.get("total-records").ok_or_else(|| {
+            rdlt_testkit::conformance::destination::ProbeError {
                 message: format!(
                     "the newest snapshot of `{}` carries no total-records summary key",
                     table.as_str()
                 ),
-            })?;
-        total.parse().map_err(|_| rdlt_testkit::ProbeError {
-            message: format!(
-                "the newest snapshot of `{}` reports total-records `{total}`, not one u64",
-                table.as_str()
-            ),
-        })
+            }
+        })?;
+        total
+            .parse()
+            .map_err(|_| rdlt_testkit::conformance::destination::ProbeError {
+                message: format!(
+                    "the newest snapshot of `{}` reports total-records `{total}`, not one u64",
+                    table.as_str()
+                ),
+            })
     }
 }
 

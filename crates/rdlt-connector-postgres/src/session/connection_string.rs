@@ -105,34 +105,34 @@ fn merge_pem_parameter(
     parameter: &'static str,
     policy_field: &'static str,
     connection_value: Option<String>,
-    field: &mut Option<tls::PemSource>,
+    field: &mut Option<tls::Material>,
 ) -> Result<(), tls::ConfigError> {
     let Some(connection_value) = connection_value else {
         return Ok(());
     };
     if parameter == "sslrootcert" && connection_value == "system" {
-        if let Some(tls::PemSource(existing)) = field {
+        if let Some(existing) = field {
             return Err(tls::ConfigError::ParameterConflict {
                 parameter,
                 policy_field,
                 connection_value,
-                override_value: existing.clone(),
+                override_value: existing.describe(),
             });
         }
         return Ok(());
     }
     match field {
-        Some(tls::PemSource(existing)) if *existing != connection_value => {
+        Some(existing) if existing.as_str() != connection_value => {
             Err(tls::ConfigError::ParameterConflict {
                 parameter,
                 policy_field,
                 connection_value,
-                override_value: existing.clone(),
+                override_value: existing.describe(),
             })
         }
         Some(_) => Ok(()),
         None => {
-            *field = Some(tls::PemSource(connection_value));
+            *field = Some(tls::Material::new(connection_value));
             Ok(())
         }
     }
@@ -361,7 +361,7 @@ fn percent_decode(value: &str) -> Result<String, ()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tls::{Mode, PemSource, Policy};
+    use crate::tls::{Material, Mode, Policy};
 
     #[test]
     fn malformed_percent_escapes_are_typed_errors() {
@@ -386,7 +386,7 @@ mod tests {
             None,
         )
         .expect("url form");
-        assert_eq!(parsed.tls.root_cert, Some(PemSource("/etc/ca.pem".into())));
+        assert_eq!(parsed.tls.root_cert, Some(Material::new("/etc/ca.pem")));
         // libpq's verify-full spelling (which the driver itself rejects)
         // translates into the policy mode.
         assert_eq!(parsed.tls.mode, Mode::VerifyFull);
@@ -410,12 +410,9 @@ mod tests {
             None,
         )
         .expect("key=value form");
-        assert_eq!(
-            parsed.tls.root_cert,
-            Some(PemSource("/my ca/ca.pem".into()))
-        );
-        assert_eq!(parsed.tls.client_cert, Some(PemSource("/c.pem".into())));
-        assert_eq!(parsed.tls.client_key, Some(PemSource("/k.pem".into())));
+        assert_eq!(parsed.tls.root_cert, Some(Material::new("/my ca/ca.pem")));
+        assert_eq!(parsed.tls.client_cert, Some(Material::new("/c.pem")));
+        assert_eq!(parsed.tls.client_key, Some(Material::new("/k.pem")));
         // The remainder reached the driver intact.
         assert_eq!(parsed.driver.get_user(), Some("u"));
     }
@@ -423,7 +420,7 @@ mod tests {
     #[test]
     fn connection_and_block_values_must_agree() {
         let block = Policy {
-            root_cert: Some(PemSource("/etc/other.pem".into())),
+            root_cert: Some(Material::new("/etc/other.pem")),
             ..Policy::default()
         };
         // Disagreement: typed, names both sides.
@@ -438,11 +435,11 @@ mod tests {
         // A credential split across sources composes: certificate in the
         // string, key in the block.
         let block = Policy {
-            client_key: Some(PemSource("/k.pem".into())),
+            client_key: Some(Material::new("/k.pem")),
             ..Policy::default()
         };
         let parsed = parse("host=h sslcert=/c.pem", Some(&block)).expect("split credential");
-        assert_eq!(parsed.tls.client_cert, Some(PemSource("/c.pem".into())));
+        assert_eq!(parsed.tls.client_cert, Some(Material::new("/c.pem")));
         // …and the both-or-neither rule still bites across sources.
         let err = parse("host=h sslcert=/c.pem", None).unwrap_err();
         assert!(err.to_string().contains("client_key is missing"), "{err}");
@@ -464,7 +461,7 @@ mod tests {
         );
         // An explicit root elsewhere conflicts with `system`.
         let block = Policy {
-            root_cert: Some(PemSource("/etc/ca.pem".into())),
+            root_cert: Some(Material::new("/etc/ca.pem")),
             ..Policy::default()
         };
         assert!(parse("host=h sslrootcert=system", Some(&block)).is_err());

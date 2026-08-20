@@ -1,9 +1,9 @@
 //! The live cells: one Oracle Free container, the whole read path.
 
 use rdlt_connector_oracle::source::cursor::OracleCursor;
-use rdlt_connector_sdk::spi::core::StreamName;
-use rdlt_connector_sdk::spi::{Source, StreamSpec};
-use rdlt_testkit::{assert_conformant, verify_source};
+use rdlt_connector_sdk::spi::core::id::StreamName;
+use rdlt_connector_sdk::spi::{source::Source, source::StreamSpec};
+use rdlt_testkit::conformance::{assert_conformant, source::verify as verify_source};
 
 use super::common;
 use super::common::{Flavor, OracleFixture, incremental, stream};
@@ -14,10 +14,10 @@ async fn read_batch(
     shell: &rdlt_connector_oracle::source::Shell,
     name: &str,
 ) -> arrow::array::RecordBatch {
-    use rdlt_connector_sdk::spi::PushPayload;
+    use rdlt_connector_sdk::spi::channel::PushPayload;
 
-    let (out, mut incoming) = rdlt_connector_sdk::spi::records_channel(64 << 20);
-    let reader = shell.read(rdlt_connector_sdk::spi::ReadRequest::new(
+    let (out, mut incoming) = rdlt_connector_sdk::spi::channel::records(64 << 20);
+    let reader = shell.read(rdlt_connector_sdk::spi::source::ReadRequest::new(
         StreamSpec::new(name),
         None,
         out,
@@ -43,10 +43,10 @@ async fn read_schema(
     shell: &rdlt_connector_oracle::source::Shell,
     name: &str,
 ) -> std::sync::Arc<arrow::datatypes::Schema> {
-    use rdlt_connector_sdk::spi::PushPayload;
+    use rdlt_connector_sdk::spi::channel::PushPayload;
 
-    let (out, mut incoming) = rdlt_connector_sdk::spi::records_channel(64 << 20);
-    let reader = shell.read(rdlt_connector_sdk::spi::ReadRequest::new(
+    let (out, mut incoming) = rdlt_connector_sdk::spi::channel::records(64 << 20);
+    let reader = shell.read(rdlt_connector_sdk::spi::source::ReadRequest::new(
         StreamSpec::new(name),
         None,
         out,
@@ -70,16 +70,18 @@ async fn read_schema(
 async fn read_all(
     shell: &rdlt_connector_oracle::source::Shell,
     name: &str,
-    since: Option<rdlt_connector_sdk::spi::core::Cursor>,
+    since: Option<rdlt_connector_sdk::spi::core::cursor::Cursor>,
 ) -> (
     Vec<serde_json::Value>,
-    Option<rdlt_connector_sdk::spi::core::Cursor>,
+    Option<rdlt_connector_sdk::spi::core::cursor::Cursor>,
 ) {
-    use rdlt_connector_sdk::spi::PushPayload;
+    use rdlt_connector_sdk::spi::channel::PushPayload;
 
-    let (out, mut incoming) = rdlt_connector_sdk::spi::records_channel(64 << 20);
+    let (out, mut incoming) = rdlt_connector_sdk::spi::channel::records(64 << 20);
     let spec = StreamSpec::new(name);
-    let reader = shell.read(rdlt_connector_sdk::spi::ReadRequest::new(spec, since, out));
+    let reader = shell.read(rdlt_connector_sdk::spi::source::ReadRequest::new(
+        spec, since, out,
+    ));
     let collect = async {
         let mut rows = Vec::new();
         let mut cursor = None;
@@ -269,9 +271,9 @@ async fn a_missing_cursor_column_is_refused() {
         .seed(&["CREATE TABLE GHOST_T (ID NUMBER(8) PRIMARY KEY)"])
         .await;
     let shell = fixture.shell(&[incremental("ghost", "GHOST_T", "CREATED_ON")]);
-    let (out, _keep) = rdlt_connector_sdk::spi::records_channel(1 << 20);
+    let (out, _keep) = rdlt_connector_sdk::spi::channel::records(1 << 20);
     let err = shell
-        .read(rdlt_connector_sdk::spi::ReadRequest::new(
+        .read(rdlt_connector_sdk::spi::source::ReadRequest::new(
             StreamSpec::new("ghost"),
             None,
             out,
@@ -326,9 +328,9 @@ async fn a_null_cursor_value_is_refused() {
         ])
         .await;
     let shell = fixture.shell(&[incremental("nullc", "NULLC_T", "TS")]);
-    let (out, _keep) = rdlt_connector_sdk::spi::records_channel(1 << 20);
+    let (out, _keep) = rdlt_connector_sdk::spi::channel::records(1 << 20);
     let err = shell
-        .read(rdlt_connector_sdk::spi::ReadRequest::new(
+        .read(rdlt_connector_sdk::spi::source::ReadRequest::new(
             StreamSpec::new("nullc"),
             None,
             out,
@@ -346,9 +348,9 @@ async fn a_null_cursor_value_is_refused() {
         .seed(&["CREATE TABLE NULLC_EMPTY (ID NUMBER(8) PRIMARY KEY, TS DATE)"])
         .await;
     let shell = fixture.shell(&[incremental("e", "NULLC_EMPTY", "TS")]);
-    let (out, _keep) = rdlt_connector_sdk::spi::records_channel(1 << 20);
+    let (out, _keep) = rdlt_connector_sdk::spi::channel::records(1 << 20);
     let err = shell
-        .read(rdlt_connector_sdk::spi::ReadRequest::new(
+        .read(rdlt_connector_sdk::spi::source::ReadRequest::new(
             StreamSpec::new("e"),
             None,
             out,
@@ -584,9 +586,9 @@ async fn columns_differing_only_in_case_are_refused() {
         .seed(&["CREATE TABLE DUPC_T (\"id\" NUMBER(4), \"ID\" NUMBER(4))"])
         .await;
     let shell = fixture.shell(&[stream("d", "DUPC_T")]);
-    let (out, _keep) = rdlt_connector_sdk::spi::records_channel(1 << 20);
+    let (out, _keep) = rdlt_connector_sdk::spi::channel::records(1 << 20);
     let err = shell
-        .read(rdlt_connector_sdk::spi::ReadRequest::new(
+        .read(rdlt_connector_sdk::spi::source::ReadRequest::new(
             StreamSpec::new("d"),
             None,
             out,

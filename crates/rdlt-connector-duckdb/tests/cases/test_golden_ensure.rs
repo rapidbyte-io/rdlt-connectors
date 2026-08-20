@@ -10,14 +10,15 @@
 
 use rdlt_connector_duckdb::destination::testhook::{ensure_merge_sql, ensure_table_sql};
 use rdlt_connector_duckdb::destination::{DestinationOptions, MergeStrategy};
-use rdlt_connector_sdk::spi::core::naming::ident_hash;
+use rdlt_connector_sdk::spi::core::schema::ident_hash;
 use rdlt_connector_sdk::spi::core::{
-    ColumnDef, ColumnType, LogicalType, Provenance, TableName, TableSchema, WriteMode,
+    commit::WriteMode, id::TableName, schema::Column, schema::ColumnType, schema::Provenance,
+    schema::TableSchema, types::LogicalType,
 };
 use rdlt_connector_sqlcore::names;
 
-fn field(name: &str, scalar: LogicalType) -> ColumnDef {
-    ColumnDef {
+fn field(name: &str, scalar: LogicalType) -> Column {
+    Column {
         name: name.to_owned(),
         column_type: ColumnType::scalar(scalar),
         nullable: true,
@@ -25,7 +26,7 @@ fn field(name: &str, scalar: LogicalType) -> ColumnDef {
     }
 }
 
-fn table(name: &str, columns: Vec<ColumnDef>) -> TableSchema {
+fn table(name: &str, columns: Vec<Column>) -> TableSchema {
     TableSchema {
         table: TableName::new(name),
         parent: None,

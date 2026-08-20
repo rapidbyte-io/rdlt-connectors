@@ -16,7 +16,7 @@ pub use crate::types::map::TypeHint;
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
     #[error("parsing postgres source config: {0}")]
-    Yaml(#[from] serde_yaml::Error),
+    Yaml(#[from] serde_yaml_ng::Error),
     #[error("parsing postgres source JSON config: {0}")]
     Json(#[from] serde_json::Error),
     #[error("invalid postgres source config: {0}")]

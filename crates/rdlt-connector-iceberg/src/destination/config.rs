@@ -11,6 +11,8 @@
 //! `from_json` / `from_value` / `new` all pass through it, and each
 //! rendered refusal names the field to fix.
 
+use super::parquet;
+use super::parts;
 use std::collections::BTreeMap;
 
 use rdlt_connector_sdk::config::Document;
@@ -45,7 +47,7 @@ pub struct Config {
     /// Parquet writer tuning; the SPI defaults (snappy) apply when
     /// absent.
     #[serde(default)]
-    pub parquet: Option<rdlt_connector_sdk::spi::ParquetOptions>,
+    pub parquet: Option<parquet::Options>,
     /// Data-file sizing; absent = the SPI's 128 MiB default.
     ///
     /// `target_bytes` becomes the library's `target_file_size`, i.e.
@@ -58,7 +60,7 @@ pub struct Config {
     /// writer streams each file out rather than accumulating it, so
     /// there is nothing for a memory ceiling to cap.
     #[serde(default)]
-    pub parts: Option<rdlt_connector_sdk::spi::PartOptions>,
+    pub parts: Option<parts::Options>,
 }
 
 /// Where the catalog lives and how to talk to it.
@@ -246,7 +248,7 @@ pub struct PartitionField {
     /// (`transform: day`), parameterized ones as one-key maps
     /// (`transform: {bucket: 16}`) — on YAML and JSON alike. Without
     /// the adapter, serde_yaml would demand `!bucket` tag syntax.
-    #[serde(with = "serde_yaml::with::singleton_map")]
+    #[serde(with = "serde_yaml_ng::with::singleton_map")]
     #[schemars(with = "PartitionTransform")]
     pub transform: PartitionTransform,
 }
@@ -273,7 +275,7 @@ pub enum PartitionTransform {
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
     #[error("invalid iceberg destination YAML: {0}")]
-    Yaml(#[from] serde_yaml::Error),
+    Yaml(#[from] serde_yaml_ng::Error),
     #[error("invalid iceberg destination JSON: {0}")]
     Json(#[from] serde_json::Error),
     #[error("invalid iceberg destination config: {0}")]

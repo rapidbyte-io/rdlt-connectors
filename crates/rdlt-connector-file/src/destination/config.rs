@@ -1,8 +1,9 @@
 //! The destination document: output path and location, the format
 //! kinds, single-column partitioning, and the parquet tuning block.
 
+use super::parquet;
+use super::parts;
 use rdlt_connector_sdk::config::Document;
-use rdlt_connector_sdk::spi::{ParquetOptions, PartOptions};
 
 use crate::location::LocationOptions;
 
@@ -26,12 +27,12 @@ pub struct Config {
     pub partition_by: Option<String>,
     /// Parquet writer tuning; absent = the COMPRESSED defaults.
     #[serde(default)]
-    pub parquet: Option<ParquetOptions>,
+    pub parquet: Option<parquet::Options>,
     /// How large an output part grows before it is closed; absent =
     /// the 128 MiB default. This is the OUTPUT size, measured after
     /// encoding — not `batch_policy`, which bounds Arrow memory.
     #[serde(default)]
-    pub parts: Option<PartOptions>,
+    pub parts: Option<parts::Options>,
 }
 
 /// The output kinds this destination writes.
@@ -73,7 +74,7 @@ impl DestFormat {
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
     #[error("invalid file destination YAML: {0}")]
-    Yaml(#[from] serde_yaml::Error),
+    Yaml(#[from] serde_yaml_ng::Error),
     #[error("invalid file destination JSON: {0}")]
     Json(#[from] serde_json::Error),
     #[error("invalid file destination config: {0}")]
@@ -117,23 +118,23 @@ impl Config {
         self
     }
 
-    pub fn with_parquet(mut self, parquet: ParquetOptions) -> Self {
+    pub fn with_parquet(mut self, parquet: parquet::Options) -> Self {
         self.parquet = Some(parquet);
         self
     }
 
     /// The configured options, or the defaults — callers never read
     /// the raw field.
-    pub fn parquet_options(&self) -> ParquetOptions {
+    pub fn parquet_options(&self) -> parquet::Options {
         self.parquet.clone().unwrap_or_default()
     }
 
     /// The configured part sizing, or the 128 MiB default.
-    pub fn part_options(&self) -> PartOptions {
+    pub fn part_options(&self) -> parts::Options {
         self.parts.unwrap_or_default()
     }
 
-    pub fn with_parts(mut self, parts: PartOptions) -> Self {
+    pub fn with_parts(mut self, parts: parts::Options) -> Self {
         self.parts = Some(parts);
         self
     }
@@ -228,7 +229,7 @@ mod tests {
         let config = Config::from_value(serde_json::json!({"path": "out"})).expect("valid");
         assert_eq!(config.format, DestFormat::Parquet);
         assert!(config.partition_by.is_none());
-        assert_eq!(config.parquet_options(), ParquetOptions::default());
+        assert_eq!(config.parquet_options(), parquet::Options::default());
     }
 
     /// Every kind is in ALL with its extension — the ownership rule's
@@ -247,7 +248,7 @@ mod tests {
             ("parquet", DestFormat::Parquet),
             ("jsonl", DestFormat::Jsonl),
         ] {
-            let parsed: DestFormat = serde_yaml::from_str(text).expect("parses");
+            let parsed: DestFormat = serde_yaml_ng::from_str(text).expect("parses");
             assert_eq!(parsed, format);
         }
     }

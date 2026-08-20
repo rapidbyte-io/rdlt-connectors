@@ -16,11 +16,11 @@ use arrow::array::{Int64Array, RecordBatch, StringArray};
 use arrow::datatypes::{DataType, Field, Schema};
 use rdlt_connector_duckdb::destination::{self, Config, Shell};
 use rdlt_connector_sdk::spi::core::{
-    ColumnDef, ColumnType, LoadId, LogicalType, PipelineId, Provenance, TableName, TableSchema,
-    WriteMode,
+    commit::WriteMode, id::LoadId, id::PipelineId, id::TableName, schema::Column,
+    schema::ColumnType, schema::Provenance, schema::TableSchema, types::LogicalType,
 };
-use rdlt_connector_sdk::spi::{Destination, OpenContext};
-use rdlt_testkit::commit_meta_for;
+use rdlt_connector_sdk::spi::{destination::Destination, destination::OpenContext};
+use rdlt_testkit::fixtures::commit_meta_for;
 
 /// `docs(id: Int64, doc: Json)` — the logical schema the SPI carries.
 fn docs_schema() -> TableSchema {
@@ -28,13 +28,13 @@ fn docs_schema() -> TableSchema {
         table: TableName::new("docs"),
         parent: None,
         columns: vec![
-            ColumnDef {
+            Column {
                 name: "id".to_owned(),
                 column_type: ColumnType::scalar(LogicalType::Int64),
                 nullable: false,
                 provenance: Provenance::Inferred,
             },
-            ColumnDef {
+            Column {
                 name: "doc".to_owned(),
                 column_type: ColumnType::scalar(LogicalType::Json),
                 nullable: true,

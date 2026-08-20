@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 pub use crate::source::reflect::{Column, Table};
 

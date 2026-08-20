@@ -12,9 +12,11 @@
 use rdlt_connector_postgres::testsupport::destination::{
     Dialect, UNIT_BEGIN, UNIT_COMMIT, UNIT_ROLLBACK, UNIT_WORK_MEM,
 };
-use rdlt_connector_sdk::spi::WriteMode;
-use rdlt_connector_sdk::spi::core::schema::ColumnDef;
-use rdlt_connector_sdk::spi::core::{ColumnType, LogicalType, Provenance, TableName, TableSchema};
+use rdlt_connector_sdk::spi::core::commit::WriteMode;
+use rdlt_connector_sdk::spi::core::schema::Column;
+use rdlt_connector_sdk::spi::core::{
+    id::TableName, schema::ColumnType, schema::Provenance, schema::TableSchema, types::LogicalType,
+};
 use rdlt_connector_sqlcore::{
     CommitContext, DestinationOptions, FullLoadPublish, Step, column_list, insert_select_sql,
     plan_commit, prepare_target, quote_identifier,
@@ -28,7 +30,7 @@ fn schema(table: &str) -> TableSchema {
         table: TableName::from(table),
         parent: None,
         columns: vec![
-            ColumnDef {
+            Column {
                 name: "id".into(),
                 column_type: ColumnType::Scalar {
                     scalar: LogicalType::Int64,
@@ -36,7 +38,7 @@ fn schema(table: &str) -> TableSchema {
                 nullable: true,
                 provenance: Provenance::Inferred,
             },
-            ColumnDef {
+            Column {
                 name: "name".into(),
                 column_type: ColumnType::Scalar {
                     scalar: LogicalType::Utf8,

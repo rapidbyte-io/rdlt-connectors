@@ -1,6 +1,7 @@
 //! scd2 against a live server (contract scd2.md): version history, point-in-time
 //! correctness, absence policies, redelivery stability, rejections.
 
+use rdlt_testkit::memory::Source as MemorySource;
 use std::sync::Arc;
 
 use arrow_array::{Int64Array, RecordBatch, StringArray};
@@ -10,12 +11,14 @@ use rdlt_connector_postgres::destination::{
     AbsentPolicy, DestinationOptions, MergeStrategy, Postgres, Scd2Options, TableOptions,
 };
 use rdlt_connector_postgres::fixtures::PostgresContainer;
-use rdlt_connector_sdk::spi::core::{LoadId, PipelineId};
+use rdlt_connector_sdk::spi::core::{id::LoadId, id::PipelineId};
 use rdlt_connector_sdk::spi::{
-    ConnectorSpec, Cursor, Destination as _, OpenContext, ReadRequest, Source, SourceError,
-    StreamSpec,
+    core::cursor::Cursor, destination::Destination as _, destination::OpenContext,
+    error::SourceError, source::ReadRequest, source::Source, source::StreamSpec,
+    spec::ConnectorSpec,
 };
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 struct DimSource {
     batch: RecordBatch,
@@ -23,6 +26,13 @@ struct DimSource {
 
 #[async_trait]
 impl Source for DimSource {
+    /// In-memory: the rows are already here, so there is nothing to
+    /// reach and nothing that could be misconfigured. Answering Ok is
+    /// the honest answer for this double, not a stub — a probe that
+    /// passes what the read then fails is what the clause forbids.
+    async fn check(&self) -> Result<(), SourceError> {
+        Ok(())
+    }
     fn spec(&self) -> ConnectorSpec {
         ConnectorSpec::new("dim-test", "0.0.0")
     }
@@ -89,7 +99,7 @@ fn scd2_destination(
 
 async fn run(destination: rdlt_connector_postgres::destination::Shell, rows: &[(i64, &str)]) {
     let mut config = EngineConfig::new("scd2");
-    config = config.with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+    config = config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
         key: vec!["id".into()],
     });
     Engine::new(config, DimSource { batch: batch(rows) }, destination)
@@ -100,26 +110,26 @@ async fn run(destination: rdlt_connector_postgres::destination::Shell, rows: &[(
 
 /// The two-column dimension schema the session-level cells ensure by hand,
 /// where no engine is in the loop to infer it.
-fn dims_schema() -> rdlt_connector_sdk::spi::core::TableSchema {
-    rdlt_connector_sdk::spi::core::TableSchema {
-        table: rdlt_connector_sdk::spi::core::TableName::new("dims"),
+fn dims_schema() -> rdlt_connector_sdk::spi::core::schema::TableSchema {
+    rdlt_connector_sdk::spi::core::schema::TableSchema {
+        table: rdlt_connector_sdk::spi::core::id::TableName::new("dims"),
         parent: None,
         columns: vec![
-            rdlt_connector_sdk::spi::core::ColumnDef {
+            rdlt_connector_sdk::spi::core::schema::Column {
                 name: "id".into(),
-                column_type: rdlt_connector_sdk::spi::core::ColumnType::scalar(
-                    rdlt_connector_sdk::spi::core::LogicalType::Int64,
+                column_type: rdlt_connector_sdk::spi::core::schema::ColumnType::scalar(
+                    rdlt_connector_sdk::spi::core::types::LogicalType::Int64,
                 ),
                 nullable: false,
-                provenance: rdlt_connector_sdk::spi::core::Provenance::Hinted,
+                provenance: rdlt_connector_sdk::spi::core::schema::Provenance::Hinted,
             },
-            rdlt_connector_sdk::spi::core::ColumnDef {
+            rdlt_connector_sdk::spi::core::schema::Column {
                 name: "name".into(),
-                column_type: rdlt_connector_sdk::spi::core::ColumnType::scalar(
-                    rdlt_connector_sdk::spi::core::LogicalType::Utf8,
+                column_type: rdlt_connector_sdk::spi::core::schema::ColumnType::scalar(
+                    rdlt_connector_sdk::spi::core::types::LogicalType::Utf8,
                 ),
                 nullable: true,
-                provenance: rdlt_connector_sdk::spi::core::Provenance::Hinted,
+                provenance: rdlt_connector_sdk::spi::core::schema::Provenance::Hinted,
             },
         ],
     }
@@ -274,8 +284,8 @@ async fn absent_retire_closes_missing_keys() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn redelivery_adds_zero_versions() {
-    use rdlt_connector_sdk::spi::core::{CommitCounters, StateDoc};
-    use rdlt_connector_sdk::spi::{CommitMeta, WriteMode};
+    use rdlt_connector_sdk::spi::core::{commit::Counters as CommitCounters, state::StateDoc};
+    use rdlt_connector_sdk::spi::{core::commit::CommitMeta, core::commit::WriteMode};
 
     let Some(container) = PostgresContainer::start().await else {
         return;
@@ -352,7 +362,7 @@ async fn rejections_are_typed_at_ensure() {
         .expect("options parse")
         .into_shell();
     let mut config = EngineConfig::new("bad");
-    config = config.with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+    config = config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
         key: vec!["id".into()],
     });
     let error = Engine::new(
@@ -372,7 +382,6 @@ async fn rejections_are_typed_at_ensure() {
     );
 
     // scd2 on a SHREDDED stream (S1): typed at ensure.
-    use rdlt_testkit::MemorySource;
     use serde_json::json;
     let destination = Postgres::new(&connection_string)
         .schema("badsh")
@@ -383,7 +392,7 @@ async fn rejections_are_typed_at_ensure() {
         .expect("options parse")
         .into_shell();
     let mut config = EngineConfig::new("badsh");
-    config = config.with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+    config = config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
         key: vec!["id".into()],
     });
     let source = MemorySource::single_stream(
@@ -403,8 +412,8 @@ async fn rejections_are_typed_at_ensure() {
 /// units' keys, so a second unit under retire fails typed instead.
 #[tokio::test(flavor = "multi_thread")]
 async fn absent_retire_rejects_multi_unit_loads() {
-    use rdlt_connector_sdk::spi::core::{CommitCounters, StateDoc};
-    use rdlt_connector_sdk::spi::{CommitMeta, WriteMode};
+    use rdlt_connector_sdk::spi::core::{commit::Counters as CommitCounters, state::StateDoc};
+    use rdlt_connector_sdk::spi::{core::commit::CommitMeta, core::commit::WriteMode};
 
     let Some(container) = PostgresContainer::start().await else {
         return;

@@ -17,7 +17,7 @@ use arrow_array::{
 };
 use arrow_schema::{DataType, TimeUnit};
 use bytes::{BufMut, BytesMut};
-use rdlt_connector_sdk::spi::core::{ColumnType, LogicalType};
+use rdlt_connector_sdk::spi::core::{schema::ColumnType, types::LogicalType};
 use tokio_postgres::types::{ToSql, Type};
 
 /// The wire decision for one column.

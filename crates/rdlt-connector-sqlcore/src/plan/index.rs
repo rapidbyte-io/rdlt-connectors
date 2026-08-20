@@ -2,7 +2,7 @@
 //! The plan names each index's shape; the destination owns the SQL text (via
 //! [`crate::names::index_name`] + its own `CREATE INDEX`).
 
-use rdlt_connector::core::schema::system_columns;
+use rdlt_connector::core::schema::system;
 
 use crate::options::{DestinationOptions, MergeStrategy};
 
@@ -41,9 +41,9 @@ pub fn index_plan(
     let strategy = options.strategy_for(table);
     let mut indexes: Vec<IndexSpec> = Vec::new();
     if has_identity {
-        indexes.push(IndexSpec::plain(vec![system_columns::ID.to_string()]));
+        indexes.push(IndexSpec::plain(vec![system::ID.to_string()]));
         if is_child {
-            indexes.push(IndexSpec::plain(vec![system_columns::ROOT_ID.to_string()]));
+            indexes.push(IndexSpec::plain(vec![system::ROOT_ID.to_string()]));
         }
     } else {
         match strategy {

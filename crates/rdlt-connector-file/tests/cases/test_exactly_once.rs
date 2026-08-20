@@ -4,11 +4,13 @@
 
 use rdlt_connector_file::destination::{self, DestFormat};
 use rdlt_connector_file::source;
-use rdlt_connector_sdk::spi::core::{LoadId, PipelineId, TableName, WriteMode};
-use rdlt_connector_sdk::spi::{Destination, OpenContext};
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_connector_sdk::spi::core::{commit::WriteMode, id::LoadId, id::PipelineId, id::TableName};
+use rdlt_connector_sdk::spi::{destination::Destination, destination::OpenContext};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 use rdlt_testkit::{
-    MemoryBatch, MemorySource, MemoryStream, batch_of, commit_meta_for, schema_for,
+    fixtures::batch_of, fixtures::commit_meta_for, fixtures::schema_for,
+    memory::Batch as MemoryBatch, memory::Source as MemorySource, memory::Stream as MemoryStream,
 };
 
 use super::common::{jsonl_source, local_dest, plant};
@@ -33,7 +35,7 @@ fn now_ms() -> u64 {
 /// `Lease::acquire` entirely (mirrors `lease.rs`'s own `plant_lease`
 /// test helper, which is `pub(super)` and so not reachable from here).
 fn plant_lease_doc(dir: &std::path::Path, pipeline: &str, owner: &str, renewed_at_ms: u64) {
-    let scope = rdlt_connector_sdk::spi::core::naming::ident_hash(pipeline, 12);
+    let scope = rdlt_connector_sdk::spi::core::schema::ident_hash(pipeline, 12);
     plant(
         dir,
         &format!("_rdlt_lease.{scope}.json"),
@@ -50,7 +52,7 @@ fn plant_lease_doc(dir: &std::path::Path, pipeline: &str, owner: &str, renewed_a
 }
 
 fn lease_doc_path(dir: &std::path::Path, pipeline: &str) -> std::path::PathBuf {
-    let scope = rdlt_connector_sdk::spi::core::naming::ident_hash(pipeline, 12);
+    let scope = rdlt_connector_sdk::spi::core::schema::ident_hash(pipeline, 12);
     dir.join(format!("_rdlt_lease.{scope}.json"))
 }
 
@@ -65,8 +67,10 @@ async fn open_session(
     dir: &std::path::Path,
     pipeline: &str,
     load: &str,
-) -> Result<Box<dyn rdlt_connector_sdk::spi::LoadSession>, rdlt_connector_sdk::spi::DestinationError>
-{
+) -> Result<
+    Box<dyn rdlt_connector_sdk::spi::destination::LoadSession>,
+    rdlt_connector_sdk::spi::error::DestinationError,
+> {
     let config = local_dest(dir);
     let dest = destination::Shell::new(config).expect("valid");
     dest.open(OpenContext::new(
@@ -223,7 +227,7 @@ async fn a_run_that_fails_mid_way_still_releases_the_lease() {
     // budget first.
     let source = MemorySource::new(vec![
         MemoryStream::new(
-            rdlt_connector_sdk::spi::StreamSpec::new("events"),
+            rdlt_connector_sdk::spi::source::StreamSpec::new("events"),
             vec![MemoryBatch::new(vec![serde_json::json!({"id": 1})])],
         )
         .fatal_after(1),
@@ -550,7 +554,7 @@ async fn a_future_manifest_version_refuses_upgrade_not_reset() {
     let dir = tempfile::tempdir().expect("tempdir");
     let config = local_dest(dir.path());
     let pipeline = PipelineId::new("future-manifest");
-    let scope = rdlt_connector_sdk::spi::core::naming::ident_hash(pipeline.as_str(), 12);
+    let scope = rdlt_connector_sdk::spi::core::schema::ident_hash(pipeline.as_str(), 12);
     let file = format!("_rdlt_manifest.{scope}.json");
     std::fs::write(
         dir.path().join(&file),
@@ -591,7 +595,7 @@ async fn a_v1_manifest_version_refuses_as_predating_v2() {
     let dir = tempfile::tempdir().expect("tempdir");
     let config = local_dest(dir.path());
     let pipeline = PipelineId::new("stale-manifest");
-    let scope = rdlt_connector_sdk::spi::core::naming::ident_hash(pipeline.as_str(), 12);
+    let scope = rdlt_connector_sdk::spi::core::schema::ident_hash(pipeline.as_str(), 12);
     let file = format!("_rdlt_manifest.{scope}.json");
     std::fs::write(
         dir.path().join(&file),
@@ -629,7 +633,7 @@ async fn a_future_commit_log_version_refuses_upgrade_not_reset() {
     let dir = tempfile::tempdir().expect("tempdir");
     let config = local_dest(dir.path());
     let pipeline = PipelineId::new("future-log");
-    let scope = rdlt_connector_sdk::spi::core::naming::ident_hash(pipeline.as_str(), 12);
+    let scope = rdlt_connector_sdk::spi::core::schema::ident_hash(pipeline.as_str(), 12);
     let file = format!("_rdlt_commits.{scope}.json");
     std::fs::write(
         dir.path().join(&file),
@@ -669,7 +673,7 @@ async fn a_v1_commit_log_version_refuses_as_predating_v2() {
     let dir = tempfile::tempdir().expect("tempdir");
     let config = local_dest(dir.path());
     let pipeline = PipelineId::new("stale-log");
-    let scope = rdlt_connector_sdk::spi::core::naming::ident_hash(pipeline.as_str(), 12);
+    let scope = rdlt_connector_sdk::spi::core::schema::ident_hash(pipeline.as_str(), 12);
     let file = format!("_rdlt_commits.{scope}.json");
     std::fs::write(
         dir.path().join(&file),

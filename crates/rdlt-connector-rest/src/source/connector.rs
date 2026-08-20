@@ -4,7 +4,9 @@
 
 use async_trait::async_trait;
 use rdlt_connector_sdk::source::{Feed, SourceConnector};
-use rdlt_connector_sdk::spi::{Cursor, SourceError, StreamSpec, core::StreamName};
+use rdlt_connector_sdk::spi::{
+    core::cursor::Cursor, core::id::StreamName, error::SourceError, source::StreamSpec,
+};
 
 use super::config::{self, Config, Stream};
 use super::http::{Client, Credentials};

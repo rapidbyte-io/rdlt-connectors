@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use duckdb::Connection;
-use rdlt_connector_sdk::spi::DestinationError;
+use rdlt_connector_sdk::spi::error::DestinationError;
 
 /// Canonical paths held open READ-WRITE by this process, one entry per
 /// live [`Db`]. Read-only oracles (`testhook`) open the library

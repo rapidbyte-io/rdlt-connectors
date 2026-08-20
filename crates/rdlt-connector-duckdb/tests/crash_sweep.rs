@@ -27,9 +27,11 @@ use rdlt_connector_duckdb::destination::{self, Config, FAIL_POINTS};
 use rdlt_connector_sdk::config::Document as _;
 use rdlt_connector_sdk::spi::core::failpoint::fail;
 use rdlt_connector_sdk::spi::{
-    ConnectorSpec, Cursor, ReadRequest, Source, SourceError, StreamSpec, WriteMode,
+    core::commit::WriteMode, core::cursor::Cursor, error::SourceError, source::ReadRequest,
+    source::Source, source::StreamSpec, spec::ConnectorSpec,
 };
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 const ACTIONS: [&str; 3] = ["return", "panic", "1*off->return"];
 
@@ -256,5 +258,5 @@ async fn strategy_arms_survive_crash_sweep() {
 #[test]
 fn the_registry_matches_the_sources() {
     let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
-    rdlt_testkit::assert_registry_matches_sources(&src, &[FAIL_POINTS]);
+    rdlt_testkit::scanner::assert_registry_matches_sources(&src, &[FAIL_POINTS]);
 }

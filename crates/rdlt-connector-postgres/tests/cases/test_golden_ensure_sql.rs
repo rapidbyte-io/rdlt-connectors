@@ -12,11 +12,12 @@ use rdlt_connector_postgres::testsupport::destination::{
     merge_ensure_statements, table_ddl_statements,
 };
 use rdlt_connector_sdk::spi::core::{
-    ColumnDef, ColumnType, LogicalType, PipelineId, Provenance, TableName, TableSchema, WriteMode,
+    commit::WriteMode, id::PipelineId, id::TableName, schema::Column, schema::ColumnType,
+    schema::Provenance, schema::TableSchema, types::LogicalType,
 };
 
-fn column(name: &str, scalar: LogicalType, nullable: bool) -> ColumnDef {
-    ColumnDef {
+fn column(name: &str, scalar: LogicalType, nullable: bool) -> Column {
+    Column {
         name: name.to_owned(),
         column_type: ColumnType::Scalar { scalar },
         nullable,
@@ -24,7 +25,7 @@ fn column(name: &str, scalar: LogicalType, nullable: bool) -> ColumnDef {
     }
 }
 
-fn schema(table: &str, columns: Vec<ColumnDef>) -> TableSchema {
+fn schema(table: &str, columns: Vec<Column>) -> TableSchema {
     TableSchema {
         table: TableName::from(table),
         parent: None,

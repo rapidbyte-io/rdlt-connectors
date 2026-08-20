@@ -3,7 +3,7 @@
 //! generation 1, which predated the kit.
 
 use rdlt_connector_iceberg::destination::Shell;
-use rdlt_testkit::{assert_conformant, verify_destination};
+use rdlt_testkit::conformance::{assert_conformant, destination::verify as verify_destination};
 
 use super::common::{CatalogFixture, LiveProbe};
 

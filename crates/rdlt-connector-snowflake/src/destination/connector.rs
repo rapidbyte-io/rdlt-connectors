@@ -5,8 +5,11 @@
 
 use async_trait::async_trait;
 use rdlt_connector_sdk::destination::DestinationConnector;
-use rdlt_connector_sdk::spi::core::naming::IdentRules;
-use rdlt_connector_sdk::spi::{DestinationCapabilities, DestinationError, OpenContext};
+use rdlt_connector_sdk::spi::core::schema::IdentRules;
+use rdlt_connector_sdk::spi::{
+    destination::Capabilities as DestinationCapabilities, destination::OpenContext,
+    error::DestinationError,
+};
 
 use super::client;
 use super::config::{Config, ConfigError, TableType, config_schema};
@@ -178,8 +181,8 @@ impl DestinationConnector for Snowflake {
 /// public API.
 #[doc(hidden)]
 pub mod testhook {
-    use rdlt_connector_sdk::spi::DestinationError;
-    use rdlt_connector_sdk::spi::core::{TableSchema, WriteMode};
+    use rdlt_connector_sdk::spi::core::{commit::WriteMode, schema::TableSchema};
+    use rdlt_connector_sdk::spi::error::DestinationError;
 
     use super::super::client::Executor as _;
     use super::super::config::{Config, TableType};

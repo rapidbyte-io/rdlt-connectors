@@ -12,10 +12,13 @@
 use duckdb::Connection;
 use rdlt_connector_duckdb::destination::{Config, ConfigError, MergeStrategy, Shell};
 use rdlt_connector_sdk::spi::core::{
-    ColumnDef, ColumnType, LoadId, LogicalType, PipelineId, Provenance, TableSchema, WriteMode,
+    commit::WriteMode, id::LoadId, id::PipelineId, schema::Column, schema::ColumnType,
+    schema::Provenance, schema::TableSchema, types::LogicalType,
 };
-use rdlt_connector_sdk::spi::{Destination, DestinationError, OpenContext};
-use rdlt_testkit::schema_for;
+use rdlt_connector_sdk::spi::{
+    destination::Destination, destination::OpenContext, error::DestinationError,
+};
+use rdlt_testkit::fixtures::schema_for;
 
 async fn ensure_under_upsert(
     path: &std::path::Path,
@@ -42,10 +45,10 @@ async fn ensure_under_upsert(
 /// non-constraint index-failure cell keys on.
 fn schema_with_struct(table: &str) -> TableSchema {
     let mut schema = schema_for(table);
-    schema.columns.push(ColumnDef {
+    schema.columns.push(Column {
         name: "payload".into(),
         column_type: ColumnType::Struct {
-            fields: vec![ColumnDef {
+            fields: vec![Column {
                 name: "x".into(),
                 column_type: ColumnType::scalar(LogicalType::Int64),
                 nullable: true,

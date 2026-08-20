@@ -14,8 +14,8 @@ use std::time::Duration;
 
 use iceberg::transaction::{ApplyTransactionAction as _, Transaction};
 use iceberg::{Catalog, TableIdent};
-use rdlt_connector_sdk::spi::DestinationError;
 use rdlt_connector_sdk::spi::core::crash_point;
+use rdlt_connector_sdk::spi::error::DestinationError;
 
 use super::client::{classify, is_commit_conflict};
 

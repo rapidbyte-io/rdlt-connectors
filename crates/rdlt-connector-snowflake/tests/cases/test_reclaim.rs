@@ -3,10 +3,10 @@
 //! no test can sit out — the testhook exposes the age precisely so both
 //! outcomes are checkable instead of only one.
 
-use rdlt_connector_sdk::spi::core::{LoadId, PipelineId, TableName, WriteMode};
-use rdlt_connector_sdk::spi::{Destination, OpenContext};
+use rdlt_connector_sdk::spi::core::{commit::WriteMode, id::LoadId, id::PipelineId, id::TableName};
+use rdlt_connector_sdk::spi::{destination::Destination, destination::OpenContext};
 use rdlt_connector_snowflake::destination::{Shell, testhook};
-use rdlt_testkit::{batch_of, schema_for};
+use rdlt_testkit::fixtures::{batch_of, schema_for};
 
 use super::common::{config_for, credentials, scratch_schema};
 

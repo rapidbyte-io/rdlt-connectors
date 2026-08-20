@@ -7,6 +7,7 @@
 //! want ~128 MB files", which is why this is measured on the files
 //! themselves rather than on row counts.
 
+use rdlt_connector_file::destination::parts;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -15,10 +16,14 @@ use arrow::datatypes::{DataType, Field, Schema};
 use rdlt_connector_file::destination;
 use rdlt_connector_sdk::spi::core::types::LogicalType;
 use rdlt_connector_sdk::spi::core::{
-    ColumnDef, ColumnType, LoadId, PipelineId, Provenance, TableName, TableSchema, WriteMode,
+    commit::WriteMode, id::LoadId, id::PipelineId, id::TableName, schema::Column,
+    schema::ColumnType, schema::Provenance, schema::TableSchema,
 };
-use rdlt_connector_sdk::spi::{Destination, LoadSession, OpenContext, PartOptions, RecordBatch};
-use rdlt_testkit::commit_meta_for;
+use rdlt_connector_sdk::spi::{
+    arrow::RecordBatch, destination::Destination, destination::LoadSession,
+    destination::OpenContext,
+};
+use rdlt_testkit::fixtures::commit_meta_for;
 
 use super::common::local_dest;
 
@@ -28,7 +33,7 @@ fn schema_of(table: &str, columns: &[&str]) -> TableSchema {
         parent: None,
         columns: columns
             .iter()
-            .map(|name| ColumnDef {
+            .map(|name| Column {
                 name: (*name).to_owned(),
                 column_type: ColumnType::scalar(if *name == "id" {
                     LogicalType::Int64
@@ -144,9 +149,9 @@ async fn a_reached_target_rolls_and_every_part_meets_it() {
     let dir = tempfile::tempdir().expect("tempdir");
     let pipeline = PipelineId::new("rolling");
     let load = LoadId::new("load-a");
-    let config = local_dest(dir.path()).with_parts(PartOptions {
+    let config = local_dest(dir.path()).with_parts(parts::Options {
         target_bytes: Some(4_096),
-        ..PartOptions::default()
+        ..parts::Options::default()
     });
     let mut session = session_over(config, &pipeline, &load).await;
 
@@ -266,7 +271,7 @@ async fn the_memory_ceiling_closes_parts_before_their_target() {
     // A target no part will reach, under a ceiling every part will.
     let config = local_dest(dir.path())
         .with_partition_by("payload")
-        .with_parts(PartOptions {
+        .with_parts(parts::Options {
             target_bytes: Some(64 * 1024),
             roll_after_seconds: None,
             max_open_bytes: Some(64 * 1024),
@@ -344,7 +349,7 @@ async fn a_replayed_commit_sweeps_a_predecessors_differently_split_finals() {
         )
         .expect("plant");
     }
-    let scope = rdlt_connector_sdk::spi::core::naming::ident_hash(pipeline.as_str(), 12);
+    let scope = rdlt_connector_sdk::spi::core::schema::ident_hash(pipeline.as_str(), 12);
     std::fs::write(
         dir.path().join(format!("_rdlt_manifest.{scope}.json")),
         serde_json::json!({
@@ -471,7 +476,7 @@ async fn the_sweep_reaches_partition_directories() {
     std::fs::create_dir_all(&eu).expect("partition dir");
     std::fs::write(eu.join("part-load-a-1-1.parquet"), b"residue").expect("plant");
     std::fs::write(eu.join("part-other-1-0.parquet"), b"bystander").expect("plant");
-    let scope = rdlt_connector_sdk::spi::core::naming::ident_hash(pipeline.as_str(), 12);
+    let scope = rdlt_connector_sdk::spi::core::schema::ident_hash(pipeline.as_str(), 12);
     std::fs::write(
         dir.path().join(format!("_rdlt_manifest.{scope}.json")),
         serde_json::json!({
@@ -584,8 +589,11 @@ fn a_zero_threshold_is_refused_at_the_config_gate() {
 #[tokio::test]
 async fn closed_parts_report_their_size_and_reason_through_the_event_feed() {
     use rdlt_connector_sdk::config::Document;
-    use rdlt_engine::{Engine, EngineConfig};
-    use rdlt_testkit::{MemoryBatch, MemorySource, MemoryStream};
+    use rdlt_engine::config::Config as EngineConfig;
+    use rdlt_engine::engine::Engine;
+    use rdlt_testkit::memory::{
+        Batch as MemoryBatch, Source as MemorySource, Stream as MemoryStream,
+    };
 
     let dir = tempfile::tempdir().expect("tempdir");
     let config = destination::Config::from_value(serde_json::json!({
@@ -608,7 +616,7 @@ async fn closed_parts_report_their_size_and_reason_through_the_event_feed() {
         )
     };
     let source = MemorySource::new(vec![MemoryStream::new(
-        rdlt_connector_sdk::spi::StreamSpec::new("events"),
+        rdlt_connector_sdk::spi::source::StreamSpec::new("events"),
         vec![
             batch(0..200),
             batch(200..400),
@@ -628,7 +636,7 @@ async fn closed_parts_report_their_size_and_reason_through_the_event_feed() {
 
     let mut closed = Vec::new();
     while let Some(event) = events.recv().await {
-        if let rdlt_engine::PipelineEvent::PartClosed {
+        if let rdlt_connector_sdk::spi::core::event::PipelineEvent::PartClosed {
             table,
             encoded_bytes,
             reason,
@@ -646,7 +654,7 @@ async fn closed_parts_report_their_size_and_reason_through_the_event_feed() {
     assert!(
         closed
             .iter()
-            .filter(|(_, _, r)| *r == rdlt_engine::PartClose::Target)
+            .filter(|(_, _, r)| *r == rdlt_connector_sdk::spi::core::event::PartCloseReason::Target)
             .count()
             >= 1,
         "size-rolled parts say Target: {closed:?}"
@@ -654,7 +662,7 @@ async fn closed_parts_report_their_size_and_reason_through_the_event_feed() {
     assert!(
         closed
             .iter()
-            .any(|(_, _, r)| *r == rdlt_engine::PartClose::Commit),
+            .any(|(_, _, r)| *r == rdlt_connector_sdk::spi::core::event::PartCloseReason::Commit),
         "the tail part says Commit: {closed:?}"
     );
     // The reported sizes are the FILES', exactly.

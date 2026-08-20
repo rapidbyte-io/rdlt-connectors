@@ -7,7 +7,7 @@
 //! verification counts or broke them outright when unreadable).
 
 use parquet::file::reader::{FileReader, SerializedFileReader};
-use rdlt_connector_sdk::spi::DestinationError;
+use rdlt_connector_sdk::spi::error::DestinationError;
 
 use crate::location::Location;
 

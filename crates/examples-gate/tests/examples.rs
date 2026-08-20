@@ -15,7 +15,8 @@
 use std::collections::{BTreeSet, HashSet};
 use std::path::{Path, PathBuf};
 
-use rdlt::pipeline_spec::{ConfigSource, ConnectorRef, DestSpec, SourceSpec};
+use rdlt::document::connector::Connector;
+use rdlt::document::{Config, WriteMode};
 use rdlt_connector_sdk::config::Document;
 
 /// Every first-party connector id an example may name — the full
@@ -36,8 +37,8 @@ fn examples_dir() -> PathBuf {
 
 /// Push one resolved config through the named connector's own Document
 /// gate, exactly as the connector does when a spawned run handshakes.
-fn validate_config(example: &str, role: &str, reference: &ConnectorRef) {
-    let ConfigSource::Inline(config) = &reference.config else {
+fn validate_config(example: &str, role: &str, reference: &Connector) {
+    let Config::Inline(config) = &reference.config else {
         panic!("{example}: the {role} config must resolve to an inline document");
     };
     let config = config.clone();
@@ -112,7 +113,7 @@ fn every_example_pipeline_parses_desugars_and_passes_connector_gates() {
         let name = entry.file_name().to_string_lossy().into_owned();
         let text = std::fs::read_to_string(&path)
             .unwrap_or_else(|e| panic!("{name}/pipeline.yaml must read: {e}"));
-        let spec: rdlt::pipeline_spec::Spec = serde_yaml::from_str(&text)
+        let spec: rdlt::document::Document = serde_yaml_ng::from_str(&text)
             .unwrap_or_else(|e| panic!("{name}/pipeline.yaml must parse: {e}"));
         // The pipeline-level halves of the build gate that need no
         // spawn: the commit-policy threshold rule is the SAME check
@@ -126,32 +127,16 @@ fn every_example_pipeline_parses_desugars_and_passes_connector_gates() {
                 .check()
                 .unwrap_or_else(|e| panic!("{name}: commit_policy must pass the build gate: {e}"));
         }
-        if let Some(rdlt::pipeline_spec::WriteModeSpec::Merge { key }) = &spec.write_mode {
+        if let Some(WriteMode::Merge { key }) = &spec.write_mode {
             assert!(!key.is_empty(), "{name}: a merge write mode needs a key");
         }
-        // The engine's shipped facade parses ONLY the explicit
-        // `connector:` arm; the pinned Spec here is older and would
-        // still accept the retired per-connector sugar, so the arm
-        // shape itself is part of the property.
-        assert!(
-            matches!(spec.source, SourceSpec::Connector(_)),
-            "{name}: the source arm must be the explicit `connector:` form"
-        );
-        assert!(
-            matches!(spec.destination, DestSpec::Connector(_)),
-            "{name}: the destination arm must be the explicit `connector:` form"
-        );
-        // The example's own directory is the base, so a path-form
-        // config resolves relative to the files beside it.
-        let source = spec
-            .source
-            .desugar(&dir)
-            .unwrap_or_else(|e| panic!("{name}: the source must desugar: {e}"));
-        let destination = spec
-            .destination
-            .desugar(&dir)
-            .unwrap_or_else(|e| panic!("{name}: the destination must desugar: {e}"));
-        for (role, reference) in [("source", &source), ("destination", &destination)] {
+        // The `connector:` arm is the only one the document model has —
+        // the facade names no connector, so the arm shape that used to
+        // need asserting is now a type-level fact, and the example's
+        // arms ARE connector references or the parse above failed.
+        let source = &spec.source;
+        let destination = &spec.destination;
+        for (role, reference) in [("source", source), ("destination", destination)] {
             assert!(
                 known_ids.contains(reference.id.as_str()),
                 "{name}: `{}` is not a shipped connector's id",

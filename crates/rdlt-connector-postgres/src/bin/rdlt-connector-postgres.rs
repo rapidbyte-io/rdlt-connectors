@@ -16,7 +16,7 @@ use rdlt_connector_postgres::source::Postgres as PgSource;
 rdlt_connector_sdk::serve_main! {
     about: "rdlt postgres connector — a protocol server (ADR 0001)",
     roles: {
-        Source => rdlt_connector_sdk::serve::source::source::<PgSource>(),
-        Destination => rdlt_connector_sdk::serve::destination::destination::<PgDestination>(),
+        Source => rdlt_connector_sdk::serve::source::run::<PgSource>(),
+        Destination => rdlt_connector_sdk::serve::destination::run::<PgDestination>(),
     }
 }

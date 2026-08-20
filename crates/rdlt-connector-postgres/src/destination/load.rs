@@ -14,8 +14,15 @@ use std::collections::{BTreeMap, BTreeSet};
 use async_trait::async_trait;
 use rdlt_connector_sdk::destination::Backend;
 use rdlt_connector_sdk::spi::{
-    CommitMeta, CommitReceipt, DestinationError, RecordBatch, WriteMode,
-    core::{LoadId, PipelineId, StateDoc, TableName, TableSchema, crash_point},
+    arrow::RecordBatch,
+    core::commit::CommitMeta,
+    core::commit::CommitReceipt,
+    core::commit::WriteMode,
+    core::{
+        crash_point, id::LoadId, id::PipelineId, id::TableName, schema::TableSchema,
+        state::StateDoc,
+    },
+    error::DestinationError,
 };
 use rdlt_connector_sqlcore::protocol::unit as unit_rules;
 use rdlt_connector_sqlcore::{

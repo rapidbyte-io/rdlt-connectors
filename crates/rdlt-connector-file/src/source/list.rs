@@ -8,7 +8,7 @@
 //! a character class. Resolution happens once per run; anything
 //! created afterwards belongs to the next one.
 
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 use super::cursor::FileMeta;
 

@@ -12,17 +12,21 @@ use arrow_array::{Int64Array, RecordBatch};
 use arrow_schema::{DataType, Field, Schema};
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 use rdlt_connector_sdk::spi::core::{
-    ColumnDef, ColumnType, CommitCounters, LoadId, LogicalType, PipelineId, Provenance, StateDoc,
-    TableName, TableSchema,
+    commit::Counters as CommitCounters, id::LoadId, id::PipelineId, id::TableName, schema::Column,
+    schema::ColumnType, schema::Provenance, schema::TableSchema, state::StateDoc,
+    types::LogicalType,
 };
-use rdlt_connector_sdk::spi::{CommitMeta, Destination, OpenContext, WriteMode};
+use rdlt_connector_sdk::spi::{
+    core::commit::CommitMeta, core::commit::WriteMode, destination::Destination,
+    destination::OpenContext,
+};
 use std::sync::Arc;
 
 fn schema(table: &str) -> TableSchema {
     TableSchema {
         table: TableName::new(table),
         parent: None,
-        columns: vec![ColumnDef {
+        columns: vec![Column {
             name: "id".into(),
             column_type: ColumnType::Scalar {
                 scalar: LogicalType::Int64,

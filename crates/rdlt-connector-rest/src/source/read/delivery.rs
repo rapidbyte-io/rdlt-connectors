@@ -4,7 +4,7 @@
 
 use rdlt_connector_sdk::source::Feed;
 use rdlt_connector_sdk::spi::core::crash_point;
-use rdlt_connector_sdk::spi::{Cursor, SourceError};
+use rdlt_connector_sdk::spi::{core::cursor::Cursor, error::SourceError};
 
 use super::sequence::Sequence;
 use crate::source::config::{Config, Incremental, Stream};

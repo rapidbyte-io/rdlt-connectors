@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use async_trait::async_trait;
 use rdlt_connector_sdk::source::{Feed, SourceConnector};
 use rdlt_connector_sdk::spi::core::crash_point;
-use rdlt_connector_sdk::spi::{Cursor, SourceError, StreamSpec};
+use rdlt_connector_sdk::spi::{core::cursor::Cursor, error::SourceError, source::StreamSpec};
 
 use super::config::{self, Config};
 use super::errors::{self, Phase};

@@ -5,14 +5,15 @@
 //! (library types stop here), the partition split, and the per-format
 //! encoders. Nothing here touches storage.
 
+use super::parquet::{Compression as ParquetCompression, Options as ParquetOptions};
 use arrow::array::UInt32Array;
 use arrow::compute::take_record_batch;
 use arrow::util::display::{ArrayFormatter, FormatOptions};
 use parquet::arrow::ArrowWriter;
 use parquet::basic::{BrotliLevel, Compression, GzipLevel, ZstdLevel};
 use parquet::file::properties::WriterProperties;
-use rdlt_connector_sdk::spi::core::TableName;
-use rdlt_connector_sdk::spi::{DestinationError, ParquetCompression, ParquetOptions, RecordBatch};
+use rdlt_connector_sdk::spi::core::id::TableName;
+use rdlt_connector_sdk::spi::{arrow::RecordBatch, error::DestinationError};
 
 use super::DestFormat;
 use crate::destination::layout::{NULL_PARTITION, encode_partition_value};
@@ -47,6 +48,9 @@ pub(crate) fn writer_props(options: &ParquetOptions) -> Result<WriterProperties,
 /// A level on a levelless codec was already refused at validation, so
 /// the missing-value branch inside `unsigned_level` guards against a
 /// future bug, not against any reachable user input.
+/// Exhaustive on purpose: the codec vocabulary is this connector's own,
+/// so a codec added to it must be given a translation here rather than
+/// falling through a catch-all that would refuse it at runtime.
 fn compression_of(options: &ParquetOptions) -> Result<Compression, DestinationError> {
     let level = options.compression_level;
     Ok(match options.compression {
@@ -79,12 +83,6 @@ fn compression_of(options: &ParquetOptions) -> Result<Compression, DestinationEr
         // The SPI's codec vocabulary is non_exhaustive. A variant this
         // build has never heard of gets refused BY NAME — falling back
         // to uncompressed silently is exactly the wrong default.
-        other => {
-            return Err(DestinationError::fatal(format!(
-                "compression `{}` is not supported by the file destination",
-                other.as_str()
-            )));
-        }
     })
 }
 

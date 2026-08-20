@@ -3,7 +3,7 @@
 //! staged and final names must reproduce identically under WAL
 //! replay, and the receipts are the exactly-once evidence).
 
-use rdlt_connector_sdk::spi::DestinationError;
+use rdlt_connector_sdk::spi::error::DestinationError;
 
 /// The persisted layout/commit-log version this build writes.
 ///
@@ -21,7 +21,7 @@ pub(crate) const STAGING_DIR: &str = ".rdlt-staging";
 
 /// The per-pipeline scope: a 12-hex identity hash, never the raw name.
 pub(super) fn scope_of(pipeline: &str) -> String {
-    rdlt_connector_sdk::spi::core::naming::ident_hash(pipeline, 12)
+    rdlt_connector_sdk::spi::core::schema::ident_hash(pipeline, 12)
 }
 
 /// The state document's file name for one scope.

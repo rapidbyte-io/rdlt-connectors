@@ -93,8 +93,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use rdlt_connector_sdk::spi::DestinationError;
 use rdlt_connector_sdk::spi::core::crash_point;
+use rdlt_connector_sdk::spi::error::DestinationError;
 use serde::{Deserialize, Serialize};
 
 use super::layout::lease_file;

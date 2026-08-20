@@ -12,7 +12,7 @@
 //! rustls `ClientConfig` before any connection exists; `verify` quarantines
 //! the deliberately-weaker certificate verifiers the libpq levels demand.
 //!
-//! [`Policy`], [`Mode`], [`ConfigError`] and [`PemSource`] are embedder API —
+//! [`Policy`], [`Mode`], [`ConfigError`] and [`Material`] are embedder API —
 //! the YAML `tls:` block and destination builders speak them. Everything
 //! else is crate-internal.
 
@@ -20,7 +20,8 @@ mod client_config;
 mod policy;
 mod verify;
 
-pub use policy::{ConfigError, Mode, PemSource, Policy};
+pub use policy::{ConfigError, Mode, Policy};
+pub use rdlt_connector_sdk::pem::Material;
 
 pub(crate) use client_config::build;
 pub(crate) use policy::{resolve, validate_credentials};

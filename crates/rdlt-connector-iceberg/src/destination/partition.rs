@@ -8,7 +8,7 @@
 //! by both sides, so the seven-arm match exists exactly once.
 
 use iceberg::spec::{Schema, Transform, UnboundPartitionField, UnboundPartitionSpec};
-use rdlt_connector_sdk::spi::DestinationError;
+use rdlt_connector_sdk::spi::error::DestinationError;
 
 use super::client::fatal;
 use super::config::{PartitionField, PartitionTransform};
@@ -135,7 +135,8 @@ fn render(pairs: &[(String, Transform)]) -> String {
 #[cfg(test)]
 mod tests {
     use rdlt_connector_sdk::spi::core::{
-        ColumnDef, ColumnType, LogicalType, Provenance, TableName, TableSchema,
+        id::TableName, schema::Column, schema::ColumnType, schema::Provenance, schema::TableSchema,
+        types::LogicalType,
     };
 
     use super::super::schema::to_iceberg_schema;
@@ -154,7 +155,7 @@ mod tests {
             parent: None,
             columns: ["region", "ts"]
                 .into_iter()
-                .map(|name| ColumnDef {
+                .map(|name| Column {
                     name: name.into(),
                     column_type: ColumnType::scalar(if name == "ts" {
                         LogicalType::TimestampTz

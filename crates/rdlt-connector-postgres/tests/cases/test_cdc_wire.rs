@@ -30,7 +30,8 @@
 
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 use rdlt_connector_sdk::spi::{
-    Cursor, PushPayload, ReadRequest, RecordBatch, RecordsIn, Source, StreamSpec, records_channel,
+    RecordsIn, arrow::RecordBatch, channel::PushPayload, channel::records, core::cursor::Cursor,
+    source::ReadRequest, source::Source, source::StreamSpec,
 };
 use rdlt_runtime::{ConnectorProvider, ConnectorRequirement, LocalBinaryConnectorProvider};
 
@@ -45,7 +46,7 @@ async fn read_all(
     stream: &StreamSpec,
     since: Option<Cursor>,
 ) -> (Vec<RecordBatch>, Vec<Cursor>) {
-    let (out, records_in) = records_channel(8 << 20);
+    let (out, records_in) = records(8 << 20);
     let request = ReadRequest::new(stream.clone(), since, out);
     let (read_result, drained) = tokio::join!(source.read(request), drain(records_in));
     read_result.expect("the remote read completes");

@@ -17,9 +17,10 @@ use duckdb::params;
 use rdlt_connector_sdk::destination::Backend;
 use rdlt_connector_sdk::spi::core::crash_point;
 use rdlt_connector_sdk::spi::core::{
-    CommitMeta, CommitReceipt, LoadId, PipelineId, StateDoc, TableName, TableSchema, WriteMode,
+    commit::CommitMeta, commit::CommitReceipt, commit::WriteMode, id::LoadId, id::PipelineId,
+    id::TableName, schema::TableSchema, state::StateDoc,
 };
-use rdlt_connector_sdk::spi::{DestinationError, RecordBatch};
+use rdlt_connector_sdk::spi::{arrow::RecordBatch, error::DestinationError};
 use rdlt_connector_sqlcore::protocol::{
     CommitContext, FullLoadPublish, Step, build_merge_plan, plan_commit, render_arm,
     staged_probe_targets, unit,

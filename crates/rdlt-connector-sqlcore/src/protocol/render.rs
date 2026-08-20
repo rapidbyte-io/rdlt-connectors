@@ -1,7 +1,7 @@
 //! Execution helpers: the destinations render step SQL through these, so the
 //! by-name publish text and the arm→SQL dispatch each exist once.
 
-use rdlt_connector::core::{TableName, TableSchema};
+use rdlt_connector::core::{id::TableName, schema::TableSchema};
 
 use crate::dialect::MergeDialect;
 use crate::options::DestinationOptions;

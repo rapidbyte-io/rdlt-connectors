@@ -2,8 +2,8 @@
 
 use async_trait::async_trait;
 use rdlt_connector_sdk::source::{Feed, SourceConnector};
-use rdlt_connector_sdk::spi::core::{Cursor, StreamName};
-use rdlt_connector_sdk::spi::{SourceError, StreamSpec};
+use rdlt_connector_sdk::spi::core::{cursor::Cursor, id::StreamName};
+use rdlt_connector_sdk::spi::{error::SourceError, source::StreamSpec};
 
 use super::client::Client;
 use super::config::{self, Config, Stream};

@@ -5,8 +5,8 @@
 use arrow_array::RecordBatch;
 use bytes::{BufMut, Bytes, BytesMut};
 use futures::SinkExt;
-use rdlt_connector_sdk::spi::DestinationError;
-use rdlt_connector_sdk::spi::core::TableSchema;
+use rdlt_connector_sdk::spi::core::schema::TableSchema;
+use rdlt_connector_sdk::spi::error::DestinationError;
 use rdlt_connector_sqlcore::quote_identifier;
 
 use super::errors::{Phase, classify_statement, fatal};

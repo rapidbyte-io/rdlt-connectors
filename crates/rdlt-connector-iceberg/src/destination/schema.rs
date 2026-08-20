@@ -11,8 +11,10 @@
 //! struct-bearing table read as contradictory drift in generation 1.
 
 use iceberg::spec::{ListType, NestedField, PrimitiveType, Schema, StructType, Type};
-use rdlt_connector_sdk::spi::DestinationError;
-use rdlt_connector_sdk::spi::core::{ColumnDef, ColumnType, LogicalType, TableSchema};
+use rdlt_connector_sdk::spi::core::{
+    schema::Column, schema::ColumnType, schema::TableSchema, types::LogicalType,
+};
+use rdlt_connector_sdk::spi::error::DestinationError;
 
 use super::client::fatal;
 
@@ -50,7 +52,7 @@ fn scalar_type(table: &str, column: &str, scalar: LogicalType) -> Result<Type, D
 /// is what "depth-first" means concretely.
 fn build_field(
     table: &str,
-    column: &ColumnDef,
+    column: &Column,
     next_id: &mut i32,
 ) -> Result<NestedField, DestinationError> {
     let id = *next_id;
@@ -178,12 +180,12 @@ fn compare_type(wanted: &Type, live: &Type) -> Option<Drift> {
 
 #[cfg(test)]
 mod tests {
-    use rdlt_connector_sdk::spi::core::{Provenance, TableName};
+    use rdlt_connector_sdk::spi::core::{id::TableName, schema::Provenance};
 
     use super::*;
 
-    fn column(name: &str, column_type: ColumnType, nullable: bool) -> ColumnDef {
-        ColumnDef {
+    fn column(name: &str, column_type: ColumnType, nullable: bool) -> Column {
+        Column {
             name: name.into(),
             column_type,
             nullable,
@@ -191,7 +193,7 @@ mod tests {
         }
     }
 
-    fn table_of(columns: Vec<ColumnDef>) -> TableSchema {
+    fn table_of(columns: Vec<Column>) -> TableSchema {
         TableSchema {
             table: TableName::from("t"),
             parent: None,

@@ -6,10 +6,12 @@
 use rdlt_connector_file::destination;
 use rdlt_connector_file::source::cursor::{FileCursor, FileMeta};
 use rdlt_connector_sdk::config::Document;
-use rdlt_connector_sdk::spi::core::naming::ident_hash;
-use rdlt_connector_sdk::spi::core::{Cursor, LoadId, PipelineId, TableName, WriteMode};
-use rdlt_connector_sdk::spi::{Destination, OpenContext};
-use rdlt_testkit::{batch_of, commit_meta_for, schema_for};
+use rdlt_connector_sdk::spi::core::schema::ident_hash;
+use rdlt_connector_sdk::spi::core::{
+    commit::WriteMode, cursor::Cursor, id::LoadId, id::PipelineId, id::TableName,
+};
+use rdlt_connector_sdk::spi::{destination::Destination, destination::OpenContext};
+use rdlt_testkit::fixtures::{batch_of, commit_meta_for, schema_for};
 
 use super::common::local_dest;
 

@@ -4,9 +4,10 @@
 //! and only a full-row comparison catches it. Runs when BOTH a
 //! snowflake account and a container runtime are present.
 
-use rdlt_connector_sdk::spi::core::WriteMode;
+use rdlt_connector_sdk::spi::core::commit::WriteMode;
 use rdlt_connector_snowflake::destination::{Shell, testhook};
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 use serde_json::json;
 use std::collections::BTreeSet;
 

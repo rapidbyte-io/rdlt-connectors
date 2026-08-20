@@ -17,6 +17,8 @@ mod layout;
 // EITHER mode — it is never the source of a close failure.
 mod lease;
 mod load;
+pub mod parquet;
+pub mod parts;
 mod stage;
 mod truncate;
 

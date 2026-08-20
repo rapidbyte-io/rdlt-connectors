@@ -4,7 +4,7 @@
 mod tests {
     use std::collections::BTreeMap;
 
-    use rdlt_connector::core::{LoadId, TableName, TableSchema};
+    use rdlt_connector::core::{id::LoadId, id::TableName, schema::TableSchema};
     use rdlt_connector_sqlcore::protocol::FullLoadPublish;
     use rdlt_connector_sqlcore::protocol::unit::*;
 

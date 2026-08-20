@@ -7,8 +7,11 @@
 use async_trait::async_trait;
 use iceberg::NamespaceIdent;
 use rdlt_connector_sdk::destination::DestinationConnector;
-use rdlt_connector_sdk::spi::core::naming::IdentRules;
-use rdlt_connector_sdk::spi::{DestinationCapabilities, DestinationError, OpenContext};
+use rdlt_connector_sdk::spi::core::schema::IdentRules;
+use rdlt_connector_sdk::spi::{
+    destination::Capabilities as DestinationCapabilities, destination::OpenContext,
+    error::DestinationError,
+};
 
 use super::client::{self, fatal};
 use super::config::{Config, ConfigError, config_schema};
@@ -94,7 +97,7 @@ impl DestinationConnector for Iceberg {
 #[doc(hidden)]
 pub mod testhook {
     use iceberg::NamespaceIdent;
-    use rdlt_connector_sdk::spi::DestinationError;
+    use rdlt_connector_sdk::spi::error::DestinationError;
 
     use super::super::config::Config;
     use super::super::{client, state};
@@ -118,7 +121,7 @@ pub mod testhook {
     /// The scope hash a pipeline name resolves to — cells assert
     /// snapshot identities without re-deriving the width.
     pub fn scope_of(pipeline: &str) -> String {
-        rdlt_connector_sdk::spi::core::naming::ident_hash(
+        rdlt_connector_sdk::spi::core::schema::ident_hash(
             pipeline,
             super::super::load::SCOPE_HASH_LEN,
         )
@@ -172,7 +175,7 @@ pub mod testhook {
         let namespace = NamespaceIdent::from_vec(namespace.to_vec())
             .map_err(|e| DestinationError::fatal(format!("namespace: {e}")))?;
         let scope = scope_of(pipeline);
-        let legacy_scope = rdlt_connector_sdk::spi::core::naming::ident_hash(
+        let legacy_scope = rdlt_connector_sdk::spi::core::schema::ident_hash(
             pipeline,
             super::super::state::LEGACY_SCOPE_HASH_LEN,
         );

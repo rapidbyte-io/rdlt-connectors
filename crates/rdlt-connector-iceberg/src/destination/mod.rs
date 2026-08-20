@@ -5,7 +5,9 @@ mod commit;
 mod config;
 mod connector;
 mod load;
+pub mod parquet;
 mod partition;
+pub mod parts;
 mod schema;
 mod state;
 #[cfg(test)]

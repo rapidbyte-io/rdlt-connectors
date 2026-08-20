@@ -12,7 +12,7 @@
 
 use bytes::Bytes;
 use rdlt_connector_sdk::source::Feed;
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 use super::open_decoded;
 use crate::format::{SLAB_BYTES, codec_of};
@@ -418,7 +418,7 @@ mod tests {
 #[cfg(test)]
 mod read_task_pins {
     use rdlt_connector_sdk::source::Feed;
-    use rdlt_connector_sdk::spi::{PushPayload, records_channel};
+    use rdlt_connector_sdk::spi::{channel::PushPayload, channel::records};
 
     use crate::location::Location;
     use crate::source::cursor::{FileCursor, FileTask};
@@ -445,7 +445,7 @@ mod read_task_pins {
         let file = dir.path().join("events.jsonl");
         std::fs::write(&file, b"{\"id\": 1}\n").expect("plant");
         let location = Location::local_dir(dir.path().to_path_buf()).expect("local");
-        let (out, _hold) = records_channel(1 << 20);
+        let (out, _hold) = records(1 << 20);
         let mut feed = Feed::new(out);
         let mut cursor = FileCursor::default();
 
@@ -475,7 +475,7 @@ mod read_task_pins {
         let file = dir.path().join("events.jsonl");
         std::fs::write(&file, b"{\"id\": 1}\n{\"id\": 2}\n").expect("plant");
         let location = Location::local_dir(dir.path().to_path_buf()).expect("local");
-        let (out, mut incoming) = records_channel(1 << 20);
+        let (out, mut incoming) = records(1 << 20);
         let mut feed = Feed::new(out);
         let mut cursor = FileCursor::default();
 

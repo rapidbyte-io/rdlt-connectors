@@ -47,6 +47,6 @@ rdlt_connector_sdk::serve_main! {
     about: "rdlt oracle connector — a protocol server (ADR 0001)",
     preflight: check_client(),
     roles: {
-        Source => rdlt_connector_sdk::serve::source::source::<Oracle>(),
+        Source => rdlt_connector_sdk::serve::source::run::<Oracle>(),
     }
 }

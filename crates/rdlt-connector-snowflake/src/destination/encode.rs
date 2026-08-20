@@ -9,8 +9,8 @@
 //! would rewrite the statement.
 
 use arrow_array::RecordBatch;
-use rdlt_connector_sdk::spi::DestinationError;
-use rdlt_connector_sdk::spi::core::TableSchema;
+use rdlt_connector_sdk::spi::core::schema::TableSchema;
+use rdlt_connector_sdk::spi::error::DestinationError;
 
 /// Escape a string for the inside of single quotes.
 ///
@@ -162,7 +162,7 @@ mod tests {
     use arrow_array::{Float64Array, Int64Array, StringArray};
     use arrow_schema::{DataType, Field, Schema as ArrowSchema};
     use rdlt_connector_sdk::spi::core::{
-        ColumnDef, ColumnType, LogicalType, Provenance, TableName,
+        id::TableName, schema::Column, schema::ColumnType, schema::Provenance, types::LogicalType,
     };
 
     use super::*;
@@ -179,7 +179,7 @@ mod tests {
             parent: None,
             columns: names
                 .iter()
-                .map(|name| ColumnDef {
+                .map(|name| Column {
                     name: (*name).to_owned(),
                     column_type: ColumnType::scalar(LogicalType::Utf8),
                     nullable: true,

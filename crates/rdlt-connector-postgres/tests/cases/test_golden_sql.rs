@@ -11,16 +11,18 @@
 
 use rdlt_connector_postgres::destination::{AbsentPolicy, DedupSort, Scd2Options, SortOrder};
 use rdlt_connector_postgres::testsupport::destination::Dialect;
-use rdlt_connector_sdk::spi::core::schema::ColumnDef;
-use rdlt_connector_sdk::spi::core::{ColumnType, LogicalType, Provenance, TableName, TableSchema};
+use rdlt_connector_sdk::spi::core::schema::Column;
+use rdlt_connector_sdk::spi::core::{
+    id::TableName, schema::ColumnType, schema::Provenance, schema::TableSchema, types::LogicalType,
+};
 use rdlt_connector_sqlcore::plan::{
     identity_delete_insert_sql, keyed_delete_insert_sql, keyed_upsert_sql, scd2_merge_sql,
     scope_replace_sql,
 };
 use rdlt_connector_sqlcore::{HardDelete, MergePlan};
 
-fn column(name: &str, scalar: LogicalType) -> ColumnDef {
-    ColumnDef {
+fn column(name: &str, scalar: LogicalType) -> Column {
+    Column {
         name: name.into(),
         column_type: ColumnType::Scalar { scalar },
         nullable: true,

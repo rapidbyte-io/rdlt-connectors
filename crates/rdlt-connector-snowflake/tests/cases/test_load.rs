@@ -3,11 +3,12 @@
 //! no schema statements (the read-before-write economy, proven on the
 //! real catalog).
 
-use rdlt_connector_sdk::spi::StreamSpec;
-use rdlt_connector_sdk::spi::core::WriteMode;
+use rdlt_connector_sdk::spi::core::commit::WriteMode;
+use rdlt_connector_sdk::spi::source::StreamSpec;
 use rdlt_connector_snowflake::destination::{Shell, testhook};
-use rdlt_engine::{Engine, EngineConfig};
-use rdlt_testkit::{MemoryBatch, MemorySource, MemoryStream};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
+use rdlt_testkit::memory::{Batch as MemoryBatch, Source as MemorySource, Stream as MemoryStream};
 use serde_json::json;
 
 use super::common::{config_for, credentials, scratch_schema};
@@ -190,25 +191,25 @@ async fn a_repeat_ensure_against_the_live_catalog_emits_nothing() {
     assert!(!columns.is_empty(), "the load created the table");
     let mut catalog = testhook::Catalog::default();
     catalog.observe("events", columns.clone());
-    let schema_shape = rdlt_connector_sdk::spi::core::TableSchema {
-        table: rdlt_connector_sdk::spi::core::TableName::from("events"),
+    let schema_shape = rdlt_connector_sdk::spi::core::schema::TableSchema {
+        table: rdlt_connector_sdk::spi::core::id::TableName::from("events"),
         parent: None,
         columns: columns
             .iter()
-            .map(|name| rdlt_connector_sdk::spi::core::ColumnDef {
+            .map(|name| rdlt_connector_sdk::spi::core::schema::Column {
                 name: name.to_lowercase(),
-                column_type: rdlt_connector_sdk::spi::core::ColumnType::scalar(
-                    rdlt_connector_sdk::spi::core::LogicalType::Utf8,
+                column_type: rdlt_connector_sdk::spi::core::schema::ColumnType::scalar(
+                    rdlt_connector_sdk::spi::core::types::LogicalType::Utf8,
                 ),
                 nullable: true,
-                provenance: rdlt_connector_sdk::spi::core::Provenance::Inferred,
+                provenance: rdlt_connector_sdk::spi::core::schema::Provenance::Inferred,
             })
             .collect(),
     };
     let again = testhook::ensure_table_sql(
         "sf-eco",
         &schema_shape,
-        &rdlt_connector_sdk::spi::core::WriteMode::Append,
+        &rdlt_connector_sdk::spi::core::commit::WriteMode::Append,
         rdlt_connector_snowflake::destination::TableType::Permanent,
         None,
         &catalog,

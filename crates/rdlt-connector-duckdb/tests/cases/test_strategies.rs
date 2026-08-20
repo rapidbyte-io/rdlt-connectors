@@ -7,9 +7,9 @@
 //! the same truth generation 1 did: same options in, same rows and same
 //! typed errors out.
 
-use rdlt_connector_sdk::spi::StreamSpec;
-use rdlt_engine::EngineConfig;
-use rdlt_testkit::MemorySource;
+use rdlt_connector_sdk::spi::source::StreamSpec;
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_testkit::memory::Source as MemorySource;
 use serde_json::json;
 
 use super::common::{

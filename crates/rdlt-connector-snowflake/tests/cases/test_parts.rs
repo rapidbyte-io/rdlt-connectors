@@ -7,10 +7,11 @@
 //! computed by this crate, so the file count is evidence rather than a
 //! restatement of the code under test.
 
-use rdlt_connector_sdk::spi::StreamSpec;
+use rdlt_connector_sdk::spi::source::StreamSpec;
 use rdlt_connector_snowflake::destination::{Shell, testhook};
-use rdlt_engine::{Engine, EngineConfig};
-use rdlt_testkit::{MemoryBatch, MemorySource, MemoryStream};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
+use rdlt_testkit::memory::{Batch as MemoryBatch, Source as MemorySource, Stream as MemoryStream};
 use serde_json::json;
 
 use super::common::{config_for, credentials, scratch_schema};

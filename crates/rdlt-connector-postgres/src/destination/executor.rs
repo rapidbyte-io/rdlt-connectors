@@ -14,8 +14,10 @@
 
 use std::collections::BTreeMap;
 
-use rdlt_connector_sdk::spi::core::{PipelineId, TableName};
-use rdlt_connector_sdk::spi::{CommitMeta, DestinationError, WriteMode};
+use rdlt_connector_sdk::spi::core::{id::PipelineId, id::TableName};
+use rdlt_connector_sdk::spi::{
+    core::commit::CommitMeta, core::commit::WriteMode, error::DestinationError,
+};
 use rdlt_connector_sqlcore::plan::scope_replace_sql;
 use rdlt_connector_sqlcore::{
     MergeDialect, Step, build_merge_plan, column_list, quote_identifier, render_arm,

@@ -17,7 +17,7 @@ use parquet::file::metadata::ParquetMetaData;
 use parquet::file::reader::FileReader as _;
 use parquet::file::reader::SerializedFileReader;
 use rdlt_connector_sdk::source::Feed;
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 use crate::source::cursor::{
     FileCursor, FileMeta, FileProgress, FileTask, ResumeCheck, TAIL_WINDOW,
@@ -258,7 +258,7 @@ mod tests {
 #[cfg(test)]
 mod wrong_kind_tests {
     use rdlt_connector_sdk::source::Feed;
-    use rdlt_connector_sdk::spi::records_channel;
+    use rdlt_connector_sdk::spi::channel::records;
 
     use crate::source::cursor::{FileCursor, FileTask, ResumeCheck};
 
@@ -267,7 +267,7 @@ mod wrong_kind_tests {
     /// 1 fell through here and skipped groups without a word).
     #[tokio::test]
     async fn a_tail_bytes_check_is_refused_not_ignored() {
-        let (out, _keep) = records_channel(1 << 20);
+        let (out, _keep) = records(1 << 20);
         let mut feed = Feed::new(out);
         let mut cursor = FileCursor::default();
         let task = FileTask {

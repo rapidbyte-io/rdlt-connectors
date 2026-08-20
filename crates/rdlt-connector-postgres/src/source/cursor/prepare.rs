@@ -7,7 +7,7 @@
 //! and RENDERS the window; the one failure it can add is a corrupt stored
 //! cursor.
 
-use rdlt_connector_sdk::spi::{Cursor, SourceError};
+use rdlt_connector_sdk::spi::{core::cursor::Cursor, error::SourceError};
 
 use super::state::State;
 use super::tracker::{Spec, Tracker};

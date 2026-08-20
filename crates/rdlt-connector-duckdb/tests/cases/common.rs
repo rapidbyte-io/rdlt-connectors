@@ -8,11 +8,14 @@ use arrow_array::{ArrayRef, BooleanArray, Int64Array, StringArray};
 use arrow_schema::{Field, Schema};
 use async_trait::async_trait;
 use rdlt_connector_duckdb::destination::{self, Config, Shell};
+use rdlt_connector_sdk::spi::core::error::Error as RdltError;
+use rdlt_connector_sdk::spi::core::report::Run as RunReport;
 use rdlt_connector_sdk::spi::{
-    ConnectorSpec, Cursor, ReadRequest, RecordBatch, Source, SourceError, StreamSpec, TableName,
-    WriteMode,
+    arrow::RecordBatch, core::commit::WriteMode, core::cursor::Cursor, core::id::TableName,
+    error::SourceError, source::ReadRequest, source::Source, source::StreamSpec,
+    spec::ConnectorSpec,
 };
-use rdlt_engine::{Engine, EngineConfig, RdltError, RunReport};
+use rdlt_engine::{config::Config as EngineConfig, engine::Engine};
 
 /// A destination over a fresh database file in `dir`.
 pub fn dest_in(dir: &std::path::Path) -> (Config, Shell) {
@@ -30,8 +33,12 @@ pub fn dest_in(dir: &std::path::Path) -> (Config, Shell) {
 /// degenerate — classification is message-keyed); an unopenable store
 /// or any other query failure is the oracle failing, never an empty
 /// table. The kit's table names pass through quoting to stay one rule.
-pub fn count_at(path: &std::path::Path, table: &str) -> Result<u64, rdlt_testkit::ProbeError> {
-    let oracle_failure = |message: String| rdlt_testkit::ProbeError { message };
+pub fn count_at(
+    path: &std::path::Path,
+    table: &str,
+) -> Result<u64, rdlt_testkit::conformance::destination::ProbeError> {
+    let oracle_failure =
+        |message: String| rdlt_testkit::conformance::destination::ProbeError { message };
     let read_only = duckdb::Config::default()
         .access_mode(duckdb::AccessMode::ReadOnly)
         .map_err(|e| oracle_failure(format!("read-only config failed: {e}")))?;
@@ -79,7 +86,7 @@ pub fn plant_broken_view_store(dir: &std::path::Path) -> std::path::PathBuf {
 /// as a probe ERROR spelled the way [`count_at`] renders it — never an
 /// empty table.
 pub async fn assert_probe_counts_absence_but_fails_broken_reads(
-    probe: &dyn rdlt_testkit::TableProbe,
+    probe: &dyn rdlt_testkit::conformance::destination::TableProbe,
 ) {
     assert_eq!(
         probe
@@ -214,6 +221,13 @@ impl KeyedFeed {
 
 #[async_trait]
 impl Source for KeyedFeed {
+    /// In-memory: the rows are already here, so there is nothing to
+    /// reach and nothing that could be misconfigured. Answering Ok is
+    /// the honest answer for this double, not a stub — a probe that
+    /// passes what the read then fails is what the clause forbids.
+    async fn check(&self) -> Result<(), SourceError> {
+        Ok(())
+    }
     fn spec(&self) -> ConnectorSpec {
         ConnectorSpec::new("keyed-feed", "0.0.0")
     }

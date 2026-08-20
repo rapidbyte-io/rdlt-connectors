@@ -9,5 +9,5 @@ use rdlt_connector_duckdb::destination::FAIL_POINTS;
 #[test]
 fn the_registry_matches_the_sources() {
     let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
-    rdlt_testkit::assert_registry_matches_sources(&src, &[FAIL_POINTS]);
+    rdlt_testkit::scanner::assert_registry_matches_sources(&src, &[FAIL_POINTS]);
 }

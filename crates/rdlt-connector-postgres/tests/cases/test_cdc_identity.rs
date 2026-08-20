@@ -1,7 +1,8 @@
 //! Replica identity and TOAST: substitution under FULL, typed refusal
 //! without it, the per-table preflight matrix, and declared-key overrides.
 
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 use crate::cases::cdc_rig::Rig;
 use crate::cases::common::source;
@@ -145,7 +146,7 @@ async fn declared_primary_key_override_keys_the_stream_under_full() {
     // Under REPLICA IDENTITY FULL a declared primary_key override must win
     // over the catalog PK (any key has values in the full old image) — not
     // be silently ignored.
-    use rdlt_connector_sdk::spi::Source;
+    use rdlt_connector_sdk::spi::source::Source;
     let Some(rig) = Rig::start("cdc-key-override").await else {
         return;
     };
@@ -190,7 +191,7 @@ async fn declared_key_mismatch_under_default_identity_is_typed() {
     );
     let config = EngineConfig::new("cdc-key-mismatch")
         .with_workdir(rig.workdir.clone())
-        .with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+        .with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
             key: vec!["code".into()],
         });
     let error = Engine::new(config, keyed_source, rig.destination(&["orders"]))

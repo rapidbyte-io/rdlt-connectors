@@ -2,14 +2,15 @@
 //! and a parent-linked table shell, so each case file builds its fixtures the
 //! same way.
 
-use rdlt_connector::WriteMode;
+use rdlt_connector::core::commit::WriteMode;
 use rdlt_connector::core::{
-    ColumnDef, ColumnType, LogicalType, ParentLink, Provenance, TableName, TableSchema,
+    id::TableName, schema::Column, schema::ColumnType, schema::ParentLink, schema::Provenance,
+    schema::TableSchema, types::LogicalType,
 };
 
 /// A nullable inferred scalar column — the only column shape the pins need.
-pub fn col(name: &str, scalar: LogicalType) -> ColumnDef {
-    ColumnDef {
+pub fn col(name: &str, scalar: LogicalType) -> Column {
+    Column {
         name: name.to_owned(),
         column_type: ColumnType::Scalar { scalar },
         nullable: true,

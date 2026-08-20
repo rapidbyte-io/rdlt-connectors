@@ -10,7 +10,7 @@
 //! hand-built configuration never went through `validate()`, and this gate
 //! is the last stop before data moves.
 
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 use crate::source::config::{Bound, CursorConfig, TableConfig};
 use crate::source::errors::{self, Phase};

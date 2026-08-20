@@ -9,8 +9,8 @@
 
 use std::collections::BTreeMap;
 
-use rdlt_connector_sdk::spi::Secret;
-use rdlt_connector_sdk::spi::core::LogicalType;
+use rdlt_connector_sdk::spi::core::types::LogicalType;
+use rdlt_connector_sdk::spi::secret::Secret;
 use serde::{Deserialize, Serialize};
 
 /// The whole source document: connection-wide settings plus one entry per
@@ -90,17 +90,17 @@ mod auth_compat {
     use super::Auth;
 
     pub fn serialize<S: Serializer>(auth: &Auth, serializer: S) -> Result<S::Ok, S::Error> {
-        serde_yaml::with::singleton_map::serialize(auth, serializer)
+        serde_yaml_ng::with::singleton_map::serialize(auth, serializer)
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Auth, D::Error> {
         // Buffer into a format-agnostic value first: YAML keeps `!tags` as
         // Value::Tagged; JSON and singleton-map YAML land as mappings.
-        let value = serde_yaml::Value::deserialize(deserializer)?;
-        if matches!(value, serde_yaml::Value::Tagged(_)) {
+        let value = serde_yaml_ng::Value::deserialize(deserializer)?;
+        if matches!(value, serde_yaml_ng::Value::Tagged(_)) {
             Auth::deserialize(value).map_err(D::Error::custom)
         } else {
-            serde_yaml::with::singleton_map::deserialize(value).map_err(D::Error::custom)
+            serde_yaml_ng::with::singleton_map::deserialize(value).map_err(D::Error::custom)
         }
     }
 }
@@ -458,7 +458,7 @@ impl From<TypeHint> for LogicalType {
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
     #[error("invalid REST source YAML: {0}")]
-    Yaml(#[from] serde_yaml::Error),
+    Yaml(#[from] serde_yaml_ng::Error),
     #[error("invalid REST source JSON: {0}")]
     Json(#[from] serde_json::Error),
     #[error("invalid REST source config: {0}")]

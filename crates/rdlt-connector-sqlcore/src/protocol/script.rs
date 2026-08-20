@@ -7,8 +7,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
-use rdlt_connector::WriteMode;
-use rdlt_connector::core::{TableName, TableSchema};
+use rdlt_connector::core::commit::WriteMode;
+use rdlt_connector::core::{id::TableName, schema::TableSchema};
 
 use crate::options::{DestinationOptions, MergeStrategy};
 use crate::plan::{MergeContext, TableFacts, single_unit_violation};

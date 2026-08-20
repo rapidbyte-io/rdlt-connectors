@@ -43,7 +43,7 @@ use std::sync::Arc;
 
 use iceberg::transaction::{ApplyTransactionAction as _, Transaction};
 use iceberg::{Catalog, NamespaceIdent, TableIdent};
-use rdlt_connector_sdk::spi::DestinationError;
+use rdlt_connector_sdk::spi::error::DestinationError;
 
 use super::client::classify;
 use super::commit::{Plan, commit_with_retry};
@@ -422,7 +422,7 @@ mod tests {
     /// meant to detect stale state under.
     #[test]
     fn the_legacy_scope_width_is_frozen_and_composes_a_distinct_key() {
-        use rdlt_connector_sdk::spi::core::naming::ident_hash;
+        use rdlt_connector_sdk::spi::core::schema::ident_hash;
 
         use super::super::load::SCOPE_HASH_LEN;
 

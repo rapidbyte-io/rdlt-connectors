@@ -11,7 +11,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::Arc;
 
-use rdlt_connector_sdk::spi::{Cursor, SourceError};
+use rdlt_connector_sdk::spi::{core::cursor::Cursor, error::SourceError};
 use serde::{Deserialize, Serialize};
 
 use crate::session;

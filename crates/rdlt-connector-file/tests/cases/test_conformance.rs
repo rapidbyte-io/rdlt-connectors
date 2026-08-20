@@ -2,8 +2,12 @@
 //! conformance" — on the local filesystem, so certification runs
 //! anywhere the gate does.
 
-use rdlt_connector_sdk::spi::core::TableName;
-use rdlt_testkit::{ProbeError, TableProbe, assert_conformant, verify_destination, verify_source};
+use rdlt_connector_sdk::spi::core::id::TableName;
+use rdlt_testkit::{
+    conformance::assert_conformant, conformance::destination::ProbeError,
+    conformance::destination::TableProbe, conformance::destination::verify as verify_destination,
+    conformance::source::verify as verify_source,
+};
 
 use super::common::{jsonl_source, local_dest, plant};
 

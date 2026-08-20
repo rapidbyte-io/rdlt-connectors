@@ -20,6 +20,6 @@ use rdlt_connector_iceberg::destination::Iceberg;
 rdlt_connector_sdk::serve_main! {
     about: "rdlt iceberg connector — a protocol server (ADR 0001)",
     roles: {
-        Destination => rdlt_connector_sdk::serve::destination::destination::<Iceberg>(),
+        Destination => rdlt_connector_sdk::serve::destination::run::<Iceberg>(),
     }
 }

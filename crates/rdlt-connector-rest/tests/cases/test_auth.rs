@@ -207,7 +207,7 @@ streams:
     );
     let outcome = read_stream(&yaml, "items", None).await;
     match outcome.result {
-        Err(rdlt_connector_sdk::spi::SourceError::Transient { .. }) => {}
+        Err(rdlt_connector_sdk::spi::error::SourceError::Transient { .. }) => {}
         other => panic!("expected Transient, got {other:?}"),
     }
 }
@@ -240,7 +240,7 @@ streams:
     );
     let outcome = read_stream(&yaml, "items", None).await;
     match outcome.result {
-        Err(rdlt_connector_sdk::spi::SourceError::RateLimited { retry_after, .. }) => {
+        Err(rdlt_connector_sdk::spi::error::SourceError::RateLimited { retry_after, .. }) => {
             assert_eq!(
                 retry_after,
                 Some(std::time::Duration::from_secs(7)),

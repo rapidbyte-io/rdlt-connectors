@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 
-use rdlt_connector::core::{TableName, TableSchema};
+use rdlt_connector::core::{id::TableName, schema::TableSchema};
 
 use crate::dialect::quote_identifier;
 use crate::options::{AbsentPolicy, DestinationOptions, MergeStrategy, Scd2Options};

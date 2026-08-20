@@ -5,7 +5,8 @@
 use rdlt_connector_postgres::destination::{
     DestinationOptions, MergeStrategy, Postgres, TableOptions,
 };
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 use crate::cases::cdc_rig::Rig;
 use crate::cases::common::source;
@@ -248,7 +249,7 @@ async fn tail_applies_bursts_cancels_cleanly_and_resumes() {
     );
     let config = EngineConfig::new("cdc-tail")
         .with_workdir(rig.workdir.clone())
-        .with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+        .with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
             key: vec!["id".into()],
         });
     let engine = Engine::new(config, tail_source, rig.destination(&["orders"]));
@@ -334,7 +335,7 @@ async fn ack_off_never_advances_the_slot() {
     let run = || async {
         let config = EngineConfig::new("cdc-ack-off")
             .with_workdir(rig.workdir.clone())
-            .with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+            .with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
                 key: vec!["id".into()],
             });
         Engine::new(
@@ -410,7 +411,7 @@ async fn custom_flag_column_flows_end_to_end() {
     let run = || async {
         let config = EngineConfig::new("cdc-flag-name")
             .with_workdir(rig.workdir.clone())
-            .with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+            .with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
                 key: vec!["id".into()],
             });
         Engine::new(

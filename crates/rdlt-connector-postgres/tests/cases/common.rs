@@ -6,7 +6,7 @@
 use async_trait::async_trait;
 use rdlt_connector_duckdb::destination::{Config, Shell, testhook};
 use rdlt_connector_postgres::source;
-use rdlt_testkit::{ProbeError, TableProbe};
+use rdlt_testkit::{conformance::destination::ProbeError, conformance::destination::TableProbe};
 use tokio_postgres::Client;
 
 /// A raw client on `connection_string`, its connection task detached — the
@@ -94,7 +94,7 @@ impl DuckDbDest {
     pub fn count_rows(
         &self,
         table: &str,
-    ) -> Result<u64, rdlt_connector_sdk::spi::DestinationError> {
+    ) -> Result<u64, rdlt_connector_sdk::spi::error::DestinationError> {
         testhook::count_rows(&self.config, table)
     }
 
@@ -102,7 +102,7 @@ impl DuckDbDest {
     pub fn query_string(
         &self,
         sql: &str,
-    ) -> Result<String, rdlt_connector_sdk::spi::DestinationError> {
+    ) -> Result<String, rdlt_connector_sdk::spi::error::DestinationError> {
         testhook::query_string(&self.config, sql)
     }
 }
@@ -125,7 +125,10 @@ pub struct Probe {
 
 #[async_trait]
 impl TableProbe for Probe {
-    async fn count(&self, table: &rdlt_connector_sdk::spi::TableName) -> Result<u64, ProbeError> {
+    async fn count(
+        &self,
+        table: &rdlt_connector_sdk::spi::core::id::TableName,
+    ) -> Result<u64, ProbeError> {
         // A failure is the oracle's, surfaced as such — folding it into
         // 0 would certify invisibility clauses vacuously (042 round 2).
         try_count(&self.connection_string, &self.schema, table.as_str())

@@ -124,7 +124,7 @@ impl OracleFixture {
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(180);
         let mut last;
         loop {
-            use rdlt_connector_sdk::spi::Source;
+            use rdlt_connector_sdk::spi::source::Source;
             let shell = Shell::new(self.config(&[])).expect("the fixture document is valid");
             match shell.check().await {
                 Ok(()) => return,

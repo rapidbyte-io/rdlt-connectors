@@ -8,7 +8,8 @@ use crate::cases::common;
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 use rdlt_connector_postgres::source;
 use rdlt_connector_sdk::config::Document;
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 const SEED: &str = r#"
 CREATE TABLE orders (id int8 PRIMARY KEY, updated_at timestamptz NOT NULL);
@@ -117,7 +118,7 @@ async fn join_query_lands_with_described_schema_and_incremental_works() {
 /// connect-phase error instead of the typed rejection under test — so this
 /// harness plays the engine's role and retries ONLY transient connect errors.
 async fn rejection_of(postgres_source: &source::Shell) -> String {
-    use rdlt_connector_sdk::spi::Source as _;
+    use rdlt_connector_sdk::spi::source::Source as _;
     for _ in 0..3 {
         let error = postgres_source
             .streams()

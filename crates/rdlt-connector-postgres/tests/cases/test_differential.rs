@@ -16,7 +16,9 @@ use chrono::{DateTime, Utc};
 use proptest::prelude::*;
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 use rdlt_connector_postgres::source;
-use rdlt_connector_sdk::spi::{PushPayload, ReadRequest, Source as _, records_channel};
+use rdlt_connector_sdk::spi::{
+    channel::PushPayload, channel::records, source::ReadRequest, source::Source as _,
+};
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -117,7 +119,7 @@ async fn collect_copy_batches(connection_string: &str, extra_yaml: &str) -> Vec<
     ))
     .expect("config");
     let specs = postgres.streams().await.expect("streams");
-    let (out, mut input) = records_channel(64 << 20);
+    let (out, mut input) = records(64 << 20);
     let read = tokio::spawn(async move {
         postgres
             .read(ReadRequest::new(

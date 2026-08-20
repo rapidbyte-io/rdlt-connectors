@@ -8,7 +8,7 @@ use futures::StreamExt as _;
 use object_store::ObjectStore as _;
 use object_store::path::Path as Key;
 use object_store::{PutMode, PutOptions, UpdateVersion};
-use rdlt_connector_sdk::spi::{DestinationError, SourceError};
+use rdlt_connector_sdk::spi::{error::DestinationError, error::SourceError};
 
 use super::kind::{CreateDoc, DocVersion, StaleDocVersion};
 use super::options::S3Options;
@@ -43,7 +43,7 @@ pub(crate) fn build_store(options: &S3Options) -> Result<object_store::aws::Amaz
 /// Severity for a destination-side store failure comes from the one
 /// shared recoverability rulebook — never re-derived locally.
 fn dest_failure(cause: object_store::Error) -> DestinationError {
-    if rdlt_connector_sdk::spi::store::is_recoverable(&cause) {
+    if super::store::is_recoverable(&cause) {
         DestinationError::transient(cause.to_string())
     } else {
         DestinationError::fatal(cause.to_string())
@@ -97,7 +97,7 @@ impl S3Location {
             "{verb} `{subject}` (s3 `{}` bucket `{}`)",
             self.endpoint, self.bucket
         );
-        if rdlt_connector_sdk::spi::store::is_recoverable(&cause) {
+        if super::store::is_recoverable(&cause) {
             return SourceError::transient(format!("{heading}: {cause}"));
         }
         match &cause {
@@ -444,7 +444,7 @@ impl std::fmt::Debug for S3Reader {
 
 impl S3Reader {
     fn io_error(&self, cause: object_store::Error) -> std::io::Error {
-        let kind = if rdlt_connector_sdk::spi::store::is_recoverable(&cause) {
+        let kind = if super::store::is_recoverable(&cause) {
             std::io::ErrorKind::ConnectionReset
         } else {
             std::io::ErrorKind::Other

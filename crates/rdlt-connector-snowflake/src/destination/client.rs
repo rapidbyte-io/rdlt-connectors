@@ -11,7 +11,7 @@
 //! needs, and turning a library error into the SPI taxonomy.
 
 use async_trait::async_trait;
-use rdlt_connector_sdk::spi::DestinationError;
+use rdlt_connector_sdk::spi::error::DestinationError;
 use snowflake_connector_rs::{
     AuthConfig, Client, ClientConfig, DynamicRow, EndpointConfig, Error as SfError, ErrorKind,
     KeyPairConfig, PasswordConfig, Session, SessionConfig,

@@ -5,12 +5,14 @@
 
 use async_trait::async_trait;
 use rdlt_connector_duckdb::destination::{Config, Shell};
-use rdlt_connector_sdk::spi::StreamSpec;
-use rdlt_connector_sdk::spi::core::{TableName, WriteMode};
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_connector_sdk::spi::core::{commit::WriteMode, id::TableName};
+use rdlt_connector_sdk::spi::source::StreamSpec;
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 use rdlt_testkit::{
-    MemoryBatch, MemorySource, MemoryStream, ProbeError, TableProbe, assert_conformant,
-    verify_destination,
+    conformance::assert_conformant, conformance::destination::ProbeError,
+    conformance::destination::TableProbe, conformance::destination::verify as verify_destination,
+    memory::Batch as MemoryBatch, memory::Source as MemorySource, memory::Stream as MemoryStream,
 };
 use serde_json::json;
 

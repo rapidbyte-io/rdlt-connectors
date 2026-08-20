@@ -19,6 +19,6 @@ use rdlt_connector_duckdb::destination::DuckDb;
 rdlt_connector_sdk::serve_main! {
     about: "rdlt duckdb connector — a protocol server (ADR 0001)",
     roles: {
-        Destination => rdlt_connector_sdk::serve::destination::destination::<DuckDb>(),
+        Destination => rdlt_connector_sdk::serve::destination::run::<DuckDb>(),
     }
 }

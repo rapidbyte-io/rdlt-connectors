@@ -2,9 +2,10 @@
 //! whole family round-trips through one pipeline).
 
 use rdlt_connector_file::{destination, source};
-use rdlt_connector_sdk::spi::StreamSpec;
-use rdlt_engine::{Engine, EngineConfig};
-use rdlt_testkit::{MemoryBatch, MemorySource, MemoryStream};
+use rdlt_connector_sdk::spi::source::StreamSpec;
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
+use rdlt_testkit::memory::{Batch as MemoryBatch, Source as MemorySource, Stream as MemoryStream};
 use serde_json::json;
 
 use super::common::{jsonl_source, local_dest, plant};

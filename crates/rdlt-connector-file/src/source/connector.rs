@@ -11,8 +11,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use async_trait::async_trait;
 use rdlt_connector_sdk::source::{Feed, SourceConnector};
-use rdlt_connector_sdk::spi::core::{Cursor, StreamName, crash_point};
-use rdlt_connector_sdk::spi::{SourceError, StreamSpec};
+use rdlt_connector_sdk::spi::core::{crash_point, cursor::Cursor, id::StreamName};
+use rdlt_connector_sdk::spi::{error::SourceError, source::StreamSpec};
 
 use super::config::{self, Config, Stream};
 use super::cursor::{FileCursor, FileMeta, FileTask};

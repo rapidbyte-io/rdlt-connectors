@@ -26,9 +26,11 @@ use rdlt_connector_postgres::destination::Postgres;
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 use rdlt_connector_sdk::config::Document as _;
 use rdlt_connector_sdk::spi::{
-    ConnectorSpec, Cursor, ReadRequest, Source, SourceError, StreamSpec, WriteMode,
+    core::commit::WriteMode, core::cursor::Cursor, error::SourceError, source::ReadRequest,
+    source::Source, source::StreamSpec, spec::ConnectorSpec,
 };
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 /// Every cell speaks through one keyed stream.
 const STREAM: &str = "kv";
@@ -54,6 +56,13 @@ struct Feed {
 
 #[async_trait]
 impl Source for Feed {
+    /// In-memory: the rows are already here, so there is nothing to
+    /// reach and nothing that could be misconfigured. Answering Ok is
+    /// the honest answer for this double, not a stub — a probe that
+    /// passes what the read then fails is what the clause forbids.
+    async fn check(&self) -> Result<(), SourceError> {
+        Ok(())
+    }
     fn spec(&self) -> ConnectorSpec {
         ConnectorSpec::new("differential-feed", "0.0.0")
     }

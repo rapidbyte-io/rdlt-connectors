@@ -4,6 +4,7 @@
 mod kind;
 mod options;
 mod s3;
+pub(crate) mod store;
 
 pub(crate) use kind::classify_read_error;
 pub(crate) use kind::{ByteReader, Location};

@@ -21,8 +21,8 @@
 //! spontaneously between frames.
 
 use async_trait::async_trait;
-use rdlt_connector_sdk::spi::TableName;
-use rdlt_testkit::{ProbeError, TableProbe};
+use rdlt_connector_sdk::spi::core::id::TableName;
+use rdlt_testkit::{conformance::destination::ProbeError, conformance::destination::TableProbe};
 
 /// Counts a table's committed rows through a snapshot copy of the
 /// database file — safe beside a LIVE connector process holding the

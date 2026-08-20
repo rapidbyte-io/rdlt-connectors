@@ -11,7 +11,9 @@ mod common;
 use common::{OracleFixture, incremental};
 use rdlt_connector_oracle::source::{FAIL_POINTS, Shell};
 use rdlt_connector_sdk::spi::core::failpoint::fail;
-use rdlt_connector_sdk::spi::{PushPayload, ReadRequest, Source, StreamSpec};
+use rdlt_connector_sdk::spi::{
+    channel::PushPayload, source::ReadRequest, source::Source, source::StreamSpec,
+};
 
 const TOTAL_ROWS: usize = 300;
 const ACTIONS: [&str; 3] = ["return", "panic", "1*off->return"];
@@ -21,8 +23,11 @@ const ACTIONS: [&str; 3] = ["return", "panic", "1*off->return"];
 /// The read runs in its own task: the `panic` fail-point action
 /// panics inside it, and a panic must be an ATTEMPT failure to
 /// observe, not the death of the sweep.
-async fn attempt(shell: Shell, since: Option<rdlt_connector_sdk::spi::core::Cursor>) -> Attempt {
-    let (out, mut incoming) = rdlt_connector_sdk::spi::records_channel(32 << 20);
+async fn attempt(
+    shell: Shell,
+    since: Option<rdlt_connector_sdk::spi::core::cursor::Cursor>,
+) -> Attempt {
+    let (out, mut incoming) = rdlt_connector_sdk::spi::channel::records(32 << 20);
     let reader = tokio::spawn(async move {
         shell
             .read(ReadRequest::new(StreamSpec::new("sweep"), since, out))
@@ -69,7 +74,7 @@ async fn attempt(shell: Shell, since: Option<rdlt_connector_sdk::spi::core::Curs
 /// it failed.
 struct Attempt {
     ids: Vec<i64>,
-    cursor: Option<rdlt_connector_sdk::spi::core::Cursor>,
+    cursor: Option<rdlt_connector_sdk::spi::core::cursor::Cursor>,
     failed: Option<String>,
 }
 
@@ -185,7 +190,7 @@ async fn every_fail_point_recovers_exactly_once() {
 /// lives in cases/test_gating.rs).
 #[test]
 fn the_registry_matches_the_sources() {
-    rdlt_testkit::assert_registry_matches_sources(
+    rdlt_testkit::scanner::assert_registry_matches_sources(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("src")
             .as_path(),

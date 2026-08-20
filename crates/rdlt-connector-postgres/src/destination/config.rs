@@ -6,7 +6,7 @@
 //! bare sqlcore names — the same spelling every SQL destination uses, so a
 //! config document reads identically whichever one consumes it.
 
-use rdlt_connector_sdk::spi::DestinationError;
+use rdlt_connector_sdk::spi::error::DestinationError;
 use serde::{Deserialize, Serialize};
 
 pub use rdlt_connector_sqlcore::{
@@ -86,7 +86,7 @@ impl Postgres {
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
     #[error("parsing postgres destination config: {0}")]
-    Yaml(#[from] serde_yaml::Error),
+    Yaml(#[from] serde_yaml_ng::Error),
     #[error("parsing postgres destination JSON config: {0}")]
     Json(#[from] serde_json::Error),
     #[error("invalid postgres destination config: {0}")]

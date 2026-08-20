@@ -9,7 +9,8 @@ use rdlt_connector_postgres::destination::{
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 use rdlt_connector_postgres::source;
 use rdlt_connector_postgres::source::config::{AckMode, CdcConfig, CdcMode, Wait};
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 /// A `cdc:` block at its documented defaults, varying only the three things
 /// the lifecycle suites vary.
@@ -123,7 +124,7 @@ impl Rig {
     fn engine_config(&self, key: &str) -> EngineConfig {
         EngineConfig::new(self.pipeline.as_str())
             .with_workdir(self.workdir.clone())
-            .with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+            .with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
                 key: vec![key.into()],
             })
     }

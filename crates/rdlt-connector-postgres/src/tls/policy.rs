@@ -9,7 +9,7 @@ use tokio_postgres::config::SslMode;
 /// A PEM input — trust root, client certificate, or client key. The shared
 /// SPI type: one statement of the path-or-inline rule for every connector
 /// that takes PEM material.
-pub use rdlt_connector_sdk::spi::PemSource;
+use rdlt_connector_sdk::pem::Material;
 
 /// How strictly a connection encrypts and verifies, on libpq's ladder.
 ///
@@ -62,14 +62,14 @@ pub struct Policy {
     #[serde(default)]
     pub mode: Mode,
     #[serde(default)]
-    pub root_cert: Option<PemSource>,
+    pub root_cert: Option<Material>,
     /// Client certificate for mutual TLS. Path or inline PEM; requires
     /// `client_key`.
     #[serde(default)]
-    pub client_cert: Option<PemSource>,
+    pub client_cert: Option<Material>,
     /// Private key matching `client_cert` (PKCS#8/RSA/SEC1, unencrypted).
     #[serde(default)]
-    pub client_key: Option<PemSource>,
+    pub client_key: Option<Material>,
 }
 
 /// Config-shaped TLS failures — everything decidable before a connection.
@@ -227,7 +227,7 @@ mod tests {
         // sets root_cert) tolerates plaintext by its own semantics and must
         // compose with conn sslmode=disable.
         let root_only = Policy {
-            root_cert: Some(PemSource("/some/ca.pem".into())),
+            root_cert: Some(Material::new("/some/ca.pem")),
             ..Policy::default()
         };
         let resolved = resolve(&driver_config("host=h sslmode=disable"), Some(&root_only))
@@ -237,9 +237,9 @@ mod tests {
 
     #[test]
     fn credential_shape_rules_are_typed_and_early() {
-        let certificate = PemSource("cert".into());
-        let key = PemSource("key".into());
-        let policy = |mode, cert: Option<&PemSource>, key: Option<&PemSource>| Policy {
+        let certificate = Material::new("cert");
+        let key = Material::new("key");
+        let policy = |mode, cert: Option<&Material>, key: Option<&Material>| Policy {
             mode,
             root_cert: None,
             client_cert: cert.cloned(),

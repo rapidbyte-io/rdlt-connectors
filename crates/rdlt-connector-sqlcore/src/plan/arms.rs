@@ -5,7 +5,7 @@
 //! pins that text byte-for-byte, so a change here that alters emitted SQL is
 //! caught there.
 
-use rdlt_connector::core::{TableSchema, schema::system_columns};
+use rdlt_connector::core::{schema::TableSchema, schema::system};
 
 use crate::dialect::{MergeDialect, Upsert, UpsertAction};
 use crate::options::{AbsentPolicy, DedupSort, Scd2Options, SortOrder};
@@ -20,7 +20,7 @@ pub struct HardDelete {
 
 impl HardDelete {
     pub fn new(column: &str, root_schema: &TableSchema, dialect: &dyn MergeDialect) -> Self {
-        use rdlt_connector::core::{ColumnType, LogicalType};
+        use rdlt_connector::core::{schema::ColumnType, types::LogicalType};
         let is_bool = matches!(
             root_schema.column(column).map(|c| &c.column_type),
             Some(ColumnType::Scalar {
@@ -132,7 +132,7 @@ impl MergePlan<'_> {
         // identifier limit.
         let name = format!(
             "rdlt_dd_{}",
-            rdlt_connector::core::naming::ident_hash(self.stage_sql, 16)
+            rdlt_connector::core::schema::ident_hash(self.stage_sql, 16)
         );
         match self.dialect.materialize_dedup(&name, &subquery) {
             Some(statement) => (vec![statement], name),
@@ -164,7 +164,7 @@ impl MergePlan<'_> {
     /// "is it present?" unwrap — the flag's presence is proven by the caller's
     /// match.
     fn flagged_roots(&self, hd: &HardDelete) -> String {
-        let id = self.quote(system_columns::ID);
+        let id = self.quote(system::ID);
         // Through the DIALECT seam, not a hand-rolled copy of it. This arm used
         // to spell `DISTINCT ON` itself, which meant a dialect overriding
         // `dedup_subquery` — because it has no DISTINCT ON, or spells last-wins
@@ -268,9 +268,9 @@ pub fn keyed_upsert_sql(plan: &MergePlan<'_>) -> Vec<String> {
 /// Shredded identity delete-insert, with the hard-delete arm.
 pub fn identity_delete_insert_sql(plan: &MergePlan<'_>) -> Vec<String> {
     let (target, cols) = (plan.target_sql, plan.cols_sql);
-    let id = plan.quote(system_columns::ID);
+    let id = plan.quote(system::ID);
     let id_col = if plan.is_child {
-        plan.quote(system_columns::ROOT_ID)
+        plan.quote(system::ROOT_ID)
     } else {
         id.clone()
     };
@@ -280,7 +280,7 @@ pub fn identity_delete_insert_sql(plan: &MergePlan<'_>) -> Vec<String> {
         (Some(hd), false) => format!(" WHERE {}", hd.keep),
         (Some(hd), true) => format!(
             " WHERE {} NOT IN {}",
-            plan.quote(system_columns::ROOT_ID),
+            plan.quote(system::ROOT_ID),
             plan.flagged_roots(hd)
         ),
         (None, _) => String::new(),
@@ -345,7 +345,7 @@ pub fn scd2_merge_sql(plan: &MergePlan<'_>, scd2: &Scd2Options) -> Vec<String> {
         .schema
         .columns
         .iter()
-        .filter(|c| !plan.key.contains(&c.name) && c.name != system_columns::LOAD_ID)
+        .filter(|c| !plan.key.contains(&c.name) && c.name != system::LOAD_ID)
         .map(|c| format!("t.{q} IS DISTINCT FROM d.{q}", q = plan.quote(&c.name)))
         .collect::<Vec<_>>()
         .join(" OR ");

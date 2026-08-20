@@ -13,10 +13,11 @@ use std::path::Path;
 use common::CatalogFixture;
 use rdlt_connector_iceberg::destination::{Config, FAIL_POINTS, Shell, testhook};
 use rdlt_connector_sdk::config::Document;
-use rdlt_connector_sdk::spi::StreamSpec;
 use rdlt_connector_sdk::spi::core::failpoint::fail;
-use rdlt_engine::{Engine, EngineConfig};
-use rdlt_testkit::{MemoryBatch, MemorySource, MemoryStream};
+use rdlt_connector_sdk::spi::source::StreamSpec;
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
+use rdlt_testkit::memory::{Batch as MemoryBatch, Source as MemorySource, Stream as MemoryStream};
 use serde_json::json;
 
 const TOTAL_ROWS: u64 = 4;
@@ -181,7 +182,7 @@ async fn every_fail_point_recovers_exactly_once() {
 /// lives in cases/test_gating.rs).
 #[test]
 fn the_registry_matches_the_sources() {
-    rdlt_testkit::assert_registry_matches_sources(
+    rdlt_testkit::scanner::assert_registry_matches_sources(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("src")
             .as_path(),

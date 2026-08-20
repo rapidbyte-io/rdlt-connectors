@@ -11,7 +11,8 @@ use std::path::Path;
 use rdlt_connector_duckdb::destination as duck;
 use rdlt_connector_rest::source::Shell;
 use rdlt_connector_sdk::spi::core::failpoint::fail;
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 use serde_json::json;
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -130,7 +131,7 @@ async fn rest_read_path_survives_crash_sweep() {
 #[test]
 fn the_registry_matches_the_sources() {
     let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
-    rdlt_testkit::assert_registry_matches_sources(
+    rdlt_testkit::scanner::assert_registry_matches_sources(
         &src,
         &[rdlt_connector_rest::source::FAIL_POINTS],
     );

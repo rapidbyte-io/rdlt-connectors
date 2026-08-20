@@ -23,8 +23,8 @@
 //! ```
 //! use std::collections::{BTreeMap, BTreeSet};
 //!
-//! use rdlt_connector::WriteMode;
-//! use rdlt_connector::core::{TableName, TableSchema};
+//! use rdlt_connector::core::commit::WriteMode;
+//! use rdlt_connector::core::{id::TableName, schema::TableSchema};
 //! use rdlt_connector_sqlcore::{CommitContext, DestinationOptions, FullLoadPublish, Step, plan_commit};
 //!
 //! let mut tables = BTreeMap::new();

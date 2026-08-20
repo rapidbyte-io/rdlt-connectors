@@ -6,9 +6,9 @@
 use crate::cases::common::count;
 use rdlt_connector_postgres::destination::Postgres;
 use rdlt_connector_postgres::fixtures::PostgresContainer;
-use rdlt_connector_sdk::spi::core::{LoadId, PipelineId, TableName, WriteMode};
-use rdlt_connector_sdk::spi::{Destination, OpenContext};
-use rdlt_testkit::{batch_of, commit_meta_for, schema_for};
+use rdlt_connector_sdk::spi::core::{commit::WriteMode, id::LoadId, id::PipelineId, id::TableName};
+use rdlt_connector_sdk::spi::{destination::Destination, destination::OpenContext};
+use rdlt_testkit::fixtures::{batch_of, commit_meta_for, schema_for};
 
 #[tokio::test(flavor = "multi_thread")]
 async fn replace_recovery_session_keeps_prior_commits_of_same_load() {

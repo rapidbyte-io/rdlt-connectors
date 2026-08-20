@@ -1,6 +1,7 @@
 //! Merge strategies against a live server: delete_insert, upsert, scd2 and
 //! hard_delete (contract merge-strategies.md).
 
+use rdlt_testkit::memory::Source as MemorySource;
 use std::sync::Arc;
 
 use arrow_array::{BooleanArray, Int64Array, RecordBatch, StringArray};
@@ -10,9 +11,11 @@ use rdlt_connector_postgres::destination::{
     DestinationOptions, MergeStrategy, Postgres, TableOptions,
 };
 use rdlt_connector_sdk::spi::{
-    ConnectorSpec, Cursor, ReadRequest, Source, SourceError, StreamSpec,
+    core::cursor::Cursor, error::SourceError, source::ReadRequest, source::Source,
+    source::StreamSpec, spec::ConnectorSpec,
 };
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 
@@ -23,6 +26,13 @@ struct FlaggedSource {
 
 #[async_trait]
 impl Source for FlaggedSource {
+    /// In-memory: the rows are already here, so there is nothing to
+    /// reach and nothing that could be misconfigured. Answering Ok is
+    /// the honest answer for this double, not a stub — a probe that
+    /// passes what the read then fails is what the clause forbids.
+    async fn check(&self) -> Result<(), SourceError> {
+        Ok(())
+    }
     fn spec(&self) -> ConnectorSpec {
         ConnectorSpec::new("flagged-test", "0.0.0")
     }
@@ -91,7 +101,7 @@ async fn run_merge(
     rows: &[(i64, &str, Option<bool>)],
 ) {
     let mut config = EngineConfig::new("strat");
-    config = config.with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+    config = config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
         key: vec!["id".into()],
     });
     Engine::new(config, FlaggedSource { batch: batch(rows) }, destination)
@@ -187,7 +197,7 @@ async fn duplicate_keys_under_upsert_fail_typed_naming_the_key() {
             .expect("dup table");
     }
     let mut config = EngineConfig::new("dup");
-    config = config.with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+    config = config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
         key: vec!["id".into()],
     });
     let error = Engine::new(
@@ -212,7 +222,6 @@ async fn shredded_upsert_is_rejected_typed_at_ensure() {
     // Review F4 / contract M7 (amended): a keyless shredded stream's
     // _rdlt_id is a content hash — conflict-update can never match an
     // updated row, so upsert on shredded streams is rejected outright.
-    use rdlt_testkit::MemorySource;
     use serde_json::json;
 
     let Some(container) = PostgresContainer::start().await else {
@@ -228,11 +237,11 @@ async fn shredded_upsert_is_rejected_typed_at_ensure() {
         .expect("options")
         .into_shell();
     let mut config = EngineConfig::new("shup");
-    config = config.with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+    config = config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
         key: vec!["id".into()],
     });
     let source = MemorySource::single_stream(
-        rdlt_connector_sdk::spi::StreamSpec::new("users").with_primary_key(["id"]),
+        rdlt_connector_sdk::spi::source::StreamSpec::new("users").with_primary_key(["id"]),
         vec![json!({"id": 1, "name": "ada"})],
     );
     let error = Engine::new(config, source, destination)
@@ -251,7 +260,6 @@ async fn flagged_then_recreated_root_keeps_its_subtree() {
     // Review F3: the hard-delete flag decision must come from the
     // DEDUPED last-wins row — a root flagged then re-created in the
     // SAME load keeps its row AND its children.
-    use rdlt_testkit::MemorySource;
     use serde_json::json;
 
     let Some(container) = PostgresContainer::start().await else {
@@ -275,13 +283,13 @@ async fn flagged_then_recreated_root_keeps_its_subtree() {
         .expect("options")
         .into_shell();
     let mut config = EngineConfig::new("recreate");
-    config = config.with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+    config = config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
         key: vec!["id".into()],
     });
     // One load, same key twice: flagged first, re-created after (arrival
     // order matters — last wins).
     let source = MemorySource::single_stream(
-        rdlt_connector_sdk::spi::StreamSpec::new("users").with_primary_key(["id"]),
+        rdlt_connector_sdk::spi::source::StreamSpec::new("users").with_primary_key(["id"]),
         vec![
             json!({"id": 1, "name": "ada", "deleted": true, "tags": []}),
             json!({"id": 1, "name": "ada-again", "deleted": null,
@@ -311,7 +319,6 @@ async fn flagged_then_recreated_root_keeps_its_subtree() {
 #[tokio::test(flavor = "multi_thread")]
 async fn child_hard_delete_is_rejected_typed() {
     // Review F6: hard_delete on a child table was silently inert.
-    use rdlt_testkit::MemorySource;
     use serde_json::json;
 
     let Some(container) = PostgresContainer::start().await else {
@@ -335,11 +342,11 @@ async fn child_hard_delete_is_rejected_typed() {
         .expect("options")
         .into_shell();
     let mut config = EngineConfig::new("childhd");
-    config = config.with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+    config = config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
         key: vec!["id".into()],
     });
     let source = MemorySource::single_stream(
-        rdlt_connector_sdk::spi::StreamSpec::new("users").with_primary_key(["id"]),
+        rdlt_connector_sdk::spi::source::StreamSpec::new("users").with_primary_key(["id"]),
         vec![json!({"id": 1, "tags": [{"label": "x"}]})],
     );
     let error = Engine::new(config, source, destination)

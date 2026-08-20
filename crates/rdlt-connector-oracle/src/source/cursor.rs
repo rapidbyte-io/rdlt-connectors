@@ -3,8 +3,8 @@
 
 use std::collections::BTreeMap;
 
-use rdlt_connector_sdk::spi::SourceError;
-use rdlt_connector_sdk::spi::core::Cursor;
+use rdlt_connector_sdk::spi::core::cursor::Cursor;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 /// The persisted format version this crate writes.
 const CURSOR_FORMAT_VERSION: u32 = 1;

@@ -41,7 +41,7 @@ pub struct Config {
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
     #[error("invalid duckdb destination YAML: {0}")]
-    Yaml(#[from] serde_yaml::Error),
+    Yaml(#[from] serde_yaml_ng::Error),
     #[error("invalid duckdb destination JSON: {0}")]
     Json(#[from] serde_json::Error),
     #[error("invalid duckdb destination config: {0}")]

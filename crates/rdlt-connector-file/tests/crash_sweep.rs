@@ -16,7 +16,8 @@ use common::{jsonl_source, local_dest, plant};
 use rdlt_connector_file::destination::{self, FAIL_POINTS, LEASE_FAIL_POINTS, S3_FAIL_POINTS};
 use rdlt_connector_file::source;
 use rdlt_connector_sdk::spi::core::failpoint::fail;
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 use s3::S3Fixture;
 
 const TOTAL_ROWS: u64 = 4;
@@ -171,7 +172,7 @@ async fn every_s3_fail_point_recovers_exactly_once() {
 /// matrix above in 037 US2 T7.
 #[test]
 fn the_registry_matches_the_sources() {
-    rdlt_testkit::assert_registry_matches_sources(
+    rdlt_testkit::scanner::assert_registry_matches_sources(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("src")
             .as_path(),

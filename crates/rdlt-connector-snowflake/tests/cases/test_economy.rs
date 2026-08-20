@@ -4,7 +4,8 @@
 //! statements that simply do not exist.
 
 use rdlt_connector_sdk::spi::core::{
-    ColumnDef, ColumnType, LogicalType, Provenance, TableName, TableSchema, WriteMode,
+    commit::WriteMode, id::TableName, schema::Column, schema::ColumnType, schema::Provenance,
+    schema::TableSchema, types::LogicalType,
 };
 use rdlt_connector_snowflake::destination::TableType;
 use rdlt_connector_snowflake::destination::testhook::{
@@ -17,7 +18,7 @@ fn schema(columns: &[(&str, bool)]) -> TableSchema {
         parent: None,
         columns: columns
             .iter()
-            .map(|(name, nullable)| ColumnDef {
+            .map(|(name, nullable)| Column {
                 name: (*name).to_owned(),
                 column_type: ColumnType::scalar(LogicalType::Int64),
                 nullable: *nullable,

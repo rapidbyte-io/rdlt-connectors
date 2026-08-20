@@ -2,7 +2,7 @@
 //! Snowflake actually returns, so these cells provoke failures and
 //! check what this crate makes of them.
 
-use rdlt_connector_sdk::spi::DestinationError;
+use rdlt_connector_sdk::spi::error::DestinationError;
 use rdlt_connector_snowflake::destination::testhook;
 
 use super::common::{config_for, credentials};

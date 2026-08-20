@@ -5,10 +5,10 @@
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use rdlt_connector::WriteMode;
-    use rdlt_connector::core::LogicalType;
-    use rdlt_connector::core::schema::ColumnDef;
-    use rdlt_connector::core::{TableName, TableSchema, schema::system_columns};
+    use rdlt_connector::core::commit::WriteMode;
+    use rdlt_connector::core::schema::Column;
+    use rdlt_connector::core::types::LogicalType;
+    use rdlt_connector::core::{id::TableName, schema::TableSchema, schema::system};
     use rdlt_connector_sqlcore::options::{
         AbsentPolicy, DestinationOptions, MergeStrategy, Scd2Options, TableOptions,
     };
@@ -17,7 +17,7 @@ mod tests {
 
     use crate::cases::common::{self, merge};
 
-    fn col(name: &str) -> ColumnDef {
+    fn col(name: &str) -> Column {
         common::col(name, LogicalType::Int64)
     }
 
@@ -622,7 +622,7 @@ mod tests {
     #[test]
     fn pin_shredded_upsert_is_unsupported() {
         let mut schema = keyed_schema("events");
-        schema.columns.insert(0, col(system_columns::ID));
+        schema.columns.insert(0, col(system::ID));
         let opts = DestinationOptions {
             merge_strategy: Some(MergeStrategy::Upsert),
             ..Default::default()

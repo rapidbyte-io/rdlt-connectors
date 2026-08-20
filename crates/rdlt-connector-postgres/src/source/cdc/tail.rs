@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use rdlt_connector_sdk::source::Feed;
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 use crate::session::Connection;
 

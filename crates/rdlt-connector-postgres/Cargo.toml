@@ -65,7 +65,7 @@ required-features = ["bin-serve"]
 # through the sdk's `spi` re-export. sqlcore is the RECORDED exception —
 # the shared SQL merge core is connector substrate, not the SPI; whether
 # it folds into the sdk is an owner decision at the connector rewrites.
-rdlt-connector-sdk = { workspace = true, features = ["schema"] }
+rdlt-connector-sdk = { workspace = true, features = ["schema", "pem"] }
 rdlt-connector-sqlcore = { workspace = true }
 # The server binary's argument surface alone (`--role`, the free
 # `--version`); optional so the library surface never carries it.
@@ -82,7 +82,7 @@ chrono = { workspace = true }
 futures = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-serde_yaml = { workspace = true }
+serde_yaml_ng = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-postgres = { workspace = true }

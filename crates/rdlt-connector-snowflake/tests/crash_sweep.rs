@@ -17,11 +17,12 @@ mod cases {
 }
 
 use cases::common::{config_for, credentials, scratch_schema};
-use rdlt_connector_sdk::spi::StreamSpec;
 use rdlt_connector_sdk::spi::core::failpoint::fail;
+use rdlt_connector_sdk::spi::source::StreamSpec;
 use rdlt_connector_snowflake::destination::{FAIL_POINTS, Shell, testhook};
-use rdlt_engine::{Engine, EngineConfig};
-use rdlt_testkit::{MemoryBatch, MemorySource, MemoryStream};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
+use rdlt_testkit::memory::{Batch as MemoryBatch, Source as MemorySource, Stream as MemoryStream};
 use serde_json::json;
 
 /// The registry agrees with the sources, in both provable directions —
@@ -29,7 +30,7 @@ use serde_json::json;
 /// from either side fails here before an account minute is spent.
 #[test]
 fn the_registry_matches_the_sources() {
-    rdlt_testkit::assert_registry_matches_sources(
+    rdlt_testkit::scanner::assert_registry_matches_sources(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("src")
             .as_path(),

@@ -18,7 +18,7 @@
 //!   local-only by its stated scope; on an object store a user-placed
 //!   `*.parquet` under the prefix is never ours.
 
-use rdlt_connector_sdk::spi::DestinationError;
+use rdlt_connector_sdk::spi::error::DestinationError;
 
 use super::DestFormat;
 use crate::location::Location;

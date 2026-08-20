@@ -7,8 +7,8 @@ use std::collections::{BTreeMap, HashSet};
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 use bytes::Bytes;
-use rdlt_connector_sdk::spi::SourceError;
 use rdlt_connector_sdk::spi::core::crash_point;
+use rdlt_connector_sdk::spi::error::SourceError;
 use serde_json::Value;
 
 use crate::source::config::{ActionKind, Config, Incremental, Method, ResponseAction, Stream};

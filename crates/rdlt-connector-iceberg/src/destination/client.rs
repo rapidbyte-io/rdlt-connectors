@@ -16,7 +16,7 @@ use std::sync::Arc;
 use iceberg::{Catalog, CatalogBuilder as _};
 use iceberg_catalog_rest::RestCatalogBuilder;
 use iceberg_storage_opendal::OpenDalResolvingStorageFactory;
-use rdlt_connector_sdk::spi::DestinationError;
+use rdlt_connector_sdk::spi::error::DestinationError;
 
 use super::config::Config;
 

@@ -14,7 +14,8 @@ use rdlt_connector_postgres::destination::{
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 use rdlt_connector_postgres::source;
 use rdlt_connector_sdk::spi::core::failpoint::fail;
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 /// Fail points are PROCESS-GLOBAL; serialize every arming test.
 static FAIL_POINT_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
@@ -64,10 +65,13 @@ impl Rig {
             .into_shell()
     }
 
-    async fn attempt(&self, connection_string: &str) -> Result<rdlt_engine::RunReport, String> {
+    async fn attempt(
+        &self,
+        connection_string: &str,
+    ) -> Result<rdlt_connector_sdk::spi::core::report::Run, String> {
         let config = EngineConfig::new("cdc-sweep")
             .with_workdir(self.workdir.clone())
-            .with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+            .with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
                 key: vec!["id".into()],
             });
         let engine = Engine::new(
@@ -259,7 +263,7 @@ async fn container_kill_mid_catch_up_is_typed_and_preserves_commits() {
                workdir: std::path::PathBuf| async move {
         let config = EngineConfig::new("cdc-kill")
             .with_workdir(workdir)
-            .with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+            .with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
                 key: vec!["id".into()],
             });
         let engine = Engine::new(config, Rig::source(&source_connection), destination);

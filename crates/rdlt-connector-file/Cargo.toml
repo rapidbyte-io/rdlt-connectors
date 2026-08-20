@@ -40,8 +40,8 @@ required-features = ["bin-serve"]
 [dependencies]
 # The ONE rdlt dependency (the one-dependency rule): the SPI is reached
 # through the sdk's `spi` re-export; the object-store recoverability
-# vocabulary arrives through the sdk's forward.
-rdlt-connector-sdk = { workspace = true, features = ["schema", "object-store"] }
+# vocabulary each connector owns.
+rdlt-connector-sdk = { workspace = true, features = ["schema"] }
 # The server binary's argument surface alone (`--role`, the free
 # `--version`); optional so the library surface never carries it.
 clap = { workspace = true, optional = true }
@@ -60,7 +60,7 @@ parquet = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-serde_yaml = { workspace = true }
+serde_yaml_ng = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 zstd = { workspace = true }

@@ -67,7 +67,7 @@ fn unknown_fields_refuse_in_parser_and_schema_alike() {
 fn every_shell_entry_passes_the_document_gate() {
     let doc = minimal_doc();
     Shell::from_value(doc.clone()).expect("value");
-    Shell::from_yaml(&serde_yaml::to_string(&doc).expect("yaml")).expect("yaml");
+    Shell::from_yaml(&serde_yaml_ng::to_string(&doc).expect("yaml")).expect("yaml");
     Shell::from_json(&serde_json::to_string(&doc).expect("json")).expect("json");
     Shell::new(Config::from_value(doc).expect("config")).expect("new");
 

@@ -94,7 +94,10 @@ iceberg = "=0.10.0"
 iceberg-catalog-rest = "=0.10.0"
 iceberg-storage-opendal = { version = "=0.10.0", features = ["opendal-s3"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip"] }
-serde_yaml = "0.9"
+# The maintained fork: serde_yaml is archived, and the engine moved to
+# this one — the two must agree or a config document parses under one
+# set of rules on one side of the wire and another on the other.
+serde_yaml_ng = "0.10"
 # Already in the tree via hyper (reqwest); a direct edge costs no new entry.
 httpdate = "1"
 duckdb = { version = "1", features = ["bundled", "appender-arrow"] }

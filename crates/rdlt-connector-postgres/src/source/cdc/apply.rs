@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use arrow_array::{ArrayRef, RecordBatch};
 use arrow_schema::{DataType, Field, Schema};
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 use crate::source::config::CdcConfig;
 use crate::source::errors::{self, Phase};

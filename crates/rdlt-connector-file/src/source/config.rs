@@ -8,7 +8,7 @@
 use std::collections::BTreeMap;
 
 use rdlt_connector_sdk::config::Document;
-use rdlt_connector_sdk::spi::core::LogicalType;
+use rdlt_connector_sdk::spi::core::types::LogicalType;
 
 use crate::format::{Codec, Format, codec_of};
 use crate::location::LocationOptions;
@@ -145,7 +145,7 @@ impl From<HintType> for LogicalType {
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
     #[error("invalid file source YAML: {0}")]
-    Yaml(#[from] serde_yaml::Error),
+    Yaml(#[from] serde_yaml_ng::Error),
     #[error("invalid file source JSON: {0}")]
     Json(#[from] serde_json::Error),
     #[error("invalid file source config: {0}")]
@@ -392,7 +392,7 @@ mod tests {
             ("uuid", LogicalType::Uuid),
             ("json", LogicalType::Json),
         ] {
-            let hint: HintType = serde_yaml::from_str(name).expect("parses");
+            let hint: HintType = serde_yaml_ng::from_str(name).expect("parses");
             assert_eq!(LogicalType::from(hint), logical, "{name}");
         }
     }

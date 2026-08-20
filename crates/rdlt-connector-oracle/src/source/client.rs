@@ -15,7 +15,7 @@
 
 use std::sync::mpsc;
 
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 use super::config::Config;
 

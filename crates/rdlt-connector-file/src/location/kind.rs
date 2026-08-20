@@ -10,7 +10,7 @@ use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
 use rdlt_connector_sdk::spi::core::crash_point;
-use rdlt_connector_sdk::spi::{DestinationError, SourceError};
+use rdlt_connector_sdk::spi::{error::DestinationError, error::SourceError};
 use serde::Serialize;
 
 use super::options::LocationOptions;

@@ -4,10 +4,10 @@
 //! values silently.
 
 use rdlt_connector_sdk::spi::core::{
-    ColumnDef, ColumnType, LoadId, LogicalType, PipelineId, Provenance, TableName, TableSchema,
-    WriteMode,
+    commit::WriteMode, id::LoadId, id::PipelineId, id::TableName, schema::Column,
+    schema::ColumnType, schema::Provenance, schema::TableSchema, types::LogicalType,
 };
-use rdlt_connector_sdk::spi::{Destination, OpenContext};
+use rdlt_connector_sdk::spi::{destination::Destination, destination::OpenContext};
 use serde_json::json;
 
 use super::common::{dest_with, ints, texts, unit};
@@ -19,7 +19,7 @@ fn table_of(table: &str, columns: &[(&str, LogicalType)]) -> TableSchema {
         parent: None,
         columns: columns
             .iter()
-            .map(|(name, scalar)| ColumnDef {
+            .map(|(name, scalar)| Column {
                 name: (*name).to_owned(),
                 column_type: ColumnType::scalar(*scalar),
                 nullable: true,
@@ -149,9 +149,9 @@ async fn a_reordered_batch_is_refused_before_the_positional_append() {
 #[tokio::test]
 async fn the_open_claim_outlives_the_shell_while_a_session_lives() {
     use rdlt_connector_duckdb::destination::{Config, Shell};
-    use rdlt_connector_sdk::spi::core::{LoadId, PipelineId, WriteMode};
-    use rdlt_connector_sdk::spi::{Destination, OpenContext};
-    use rdlt_testkit::schema_for;
+    use rdlt_connector_sdk::spi::core::{commit::WriteMode, id::LoadId, id::PipelineId};
+    use rdlt_connector_sdk::spi::{destination::Destination, destination::OpenContext};
+    use rdlt_testkit::fixtures::schema_for;
 
     let dir = tempfile::tempdir().expect("dir");
     let path = dir.path().join("held.duckdb");
@@ -256,9 +256,11 @@ async fn a_short_batch_is_refused_with_the_arity_message() {
 #[tokio::test]
 async fn a_refused_second_open_leaves_committed_data_intact() {
     use rdlt_connector_duckdb::destination::{self, Config, Shell};
-    use rdlt_connector_sdk::spi::core::{LoadId, PipelineId, TableName, WriteMode};
-    use rdlt_connector_sdk::spi::{Destination, OpenContext};
-    use rdlt_testkit::{batch_of, commit_meta_for, schema_for};
+    use rdlt_connector_sdk::spi::core::{
+        commit::WriteMode, id::LoadId, id::PipelineId, id::TableName,
+    };
+    use rdlt_connector_sdk::spi::{destination::Destination, destination::OpenContext};
+    use rdlt_testkit::fixtures::{batch_of, commit_meta_for, schema_for};
 
     let dir = tempfile::tempdir().expect("dir");
     let path = dir.path().join("survivor.duckdb");

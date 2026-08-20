@@ -95,7 +95,7 @@ fn scratch_schemas_are_unique_and_uppercase() {
 /// routine gate, not wait for the next manual sweep.
 #[test]
 fn the_crash_registry_matches_the_sources_in_gate() {
-    rdlt_testkit::assert_registry_matches_sources(
+    rdlt_testkit::scanner::assert_registry_matches_sources(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("src")
             .as_path(),

@@ -4,8 +4,11 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use async_trait::async_trait;
 use rdlt_connector_sdk::destination::DestinationConnector;
-use rdlt_connector_sdk::spi::core::naming::IdentRules;
-use rdlt_connector_sdk::spi::{DestinationCapabilities, DestinationError, OpenContext};
+use rdlt_connector_sdk::spi::core::schema::IdentRules;
+use rdlt_connector_sdk::spi::{
+    destination::Capabilities as DestinationCapabilities, destination::OpenContext,
+    error::DestinationError,
+};
 
 use super::config::{Config, ConfigError, config_schema};
 use super::layout::scope_of;
@@ -163,7 +166,7 @@ impl DestinationConnector for File {
 /// Seams the tests need and nothing else may use. Not a public API.
 #[doc(hidden)]
 pub mod testhook {
-    use rdlt_connector_sdk::spi::DestinationError;
+    use rdlt_connector_sdk::spi::error::DestinationError;
 
     use crate::location::Location;
 

@@ -15,7 +15,7 @@ use arrow_array::RecordBatch;
 use futures::TryStreamExt;
 use rdlt_connector_sdk::source::Feed;
 use rdlt_connector_sdk::spi::core::crash_point;
-use rdlt_connector_sdk::spi::{Cursor, SourceError};
+use rdlt_connector_sdk::spi::{core::cursor::Cursor, error::SourceError};
 use tokio_postgres::Client;
 
 use crate::source::errors::{self, Phase};

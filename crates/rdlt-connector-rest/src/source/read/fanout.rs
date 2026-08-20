@@ -6,7 +6,7 @@
 //! records.
 
 use bytes::Bytes;
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 use crate::source::config::{Config, Incremental, Parent, Stream};
 use crate::source::http::Client;

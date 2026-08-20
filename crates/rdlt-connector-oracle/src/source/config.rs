@@ -155,7 +155,7 @@ pub struct Stream {
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
     #[error("invalid oracle source YAML: {0}")]
-    Yaml(#[from] serde_yaml::Error),
+    Yaml(#[from] serde_yaml_ng::Error),
     #[error("invalid oracle source JSON: {0}")]
     Json(#[from] serde_json::Error),
     #[error("invalid oracle source config: {0}")]

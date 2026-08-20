@@ -9,8 +9,10 @@
 //! only a within-session drop or reorder is a defect.
 
 use duckdb::params;
-use rdlt_connector_sdk::spi::DestinationError;
-use rdlt_connector_sdk::spi::core::{ColumnDef, ColumnType, LogicalType, Provenance, TableSchema};
+use rdlt_connector_sdk::spi::core::{
+    schema::Column, schema::ColumnType, schema::Provenance, schema::TableSchema, types::LogicalType,
+};
+use rdlt_connector_sdk::spi::error::DestinationError;
 use rdlt_connector_sqlcore::names;
 
 use super::client::classify;
@@ -57,7 +59,7 @@ pub(super) fn live_schema(
         let Some(column_type) = column_type_of(&duckdb_type) else {
             continue;
         };
-        columns.push(ColumnDef {
+        columns.push(Column {
             name,
             column_type,
             // Physically unrecoverable, and unused by the widen
@@ -344,7 +346,7 @@ fn column_type_of(duckdb_type: &str) -> Option<ColumnType> {
         for field in split_top_level(body) {
             let (name, rest) = split_identifier(field.trim())?;
             let column_type = column_type_of(rest.trim())?;
-            fields.push(ColumnDef {
+            fields.push(Column {
                 name,
                 column_type,
                 nullable: true,
@@ -438,7 +440,7 @@ fn split_identifier(field: &str) -> Option<(String, &str)> {
 
 #[cfg(test)]
 mod tests {
-    use rdlt_connector_sdk::spi::core::{TableName, WriteMode};
+    use rdlt_connector_sdk::spi::core::{commit::WriteMode, id::TableName};
     use rdlt_connector_sqlcore::{DestinationOptions, MergeStrategy};
 
     use super::super::schema::{create_table_sql, merge_ddl, table_ddl};
@@ -448,8 +450,8 @@ mod tests {
         duckdb::Connection::open_in_memory().expect("bundled in-memory duckdb")
     }
 
-    fn col(name: &str, column_type: ColumnType) -> ColumnDef {
-        ColumnDef {
+    fn col(name: &str, column_type: ColumnType) -> Column {
+        Column {
             name: name.to_owned(),
             column_type,
             nullable: true,

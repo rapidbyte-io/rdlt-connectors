@@ -206,17 +206,25 @@ pub struct KeyedSource {
 }
 
 #[async_trait::async_trait]
-impl rdlt_connector_sdk::spi::Source for KeyedSource {
-    fn spec(&self) -> rdlt_connector_sdk::spi::ConnectorSpec {
-        rdlt_connector_sdk::spi::ConnectorSpec::new("keyed-test-source", "0.0.0")
+impl rdlt_connector_sdk::spi::source::Source for KeyedSource {
+    /// In-memory: nothing to reach, nothing to misconfigure — Ok is
+    /// the honest answer for this double, not a stub.
+    async fn check(&self) -> Result<(), rdlt_connector_sdk::spi::error::SourceError> {
+        Ok(())
+    }
+
+    fn spec(&self) -> rdlt_connector_sdk::spi::spec::ConnectorSpec {
+        rdlt_connector_sdk::spi::spec::ConnectorSpec::new("keyed-test-source", "0.0.0")
     }
 
     async fn streams(
         &self,
-    ) -> Result<Vec<rdlt_connector_sdk::spi::StreamSpec>, rdlt_connector_sdk::spi::SourceError>
-    {
+    ) -> Result<
+        Vec<rdlt_connector_sdk::spi::source::StreamSpec>,
+        rdlt_connector_sdk::spi::error::SourceError,
+    > {
         Ok(vec![
-            rdlt_connector_sdk::spi::StreamSpec::new("events")
+            rdlt_connector_sdk::spi::source::StreamSpec::new("events")
                 .with_structured()
                 .with_primary_key(["id".to_owned()]),
         ])
@@ -224,8 +232,8 @@ impl rdlt_connector_sdk::spi::Source for KeyedSource {
 
     async fn read(
         &self,
-        mut request: rdlt_connector_sdk::spi::ReadRequest,
-    ) -> Result<(), rdlt_connector_sdk::spi::SourceError> {
+        mut request: rdlt_connector_sdk::spi::source::ReadRequest,
+    ) -> Result<(), rdlt_connector_sdk::spi::error::SourceError> {
         use std::sync::Arc;
         let schema = Arc::new(arrow_schema::Schema::new(vec![
             arrow_schema::Field::new("id", arrow_schema::DataType::Int64, false),

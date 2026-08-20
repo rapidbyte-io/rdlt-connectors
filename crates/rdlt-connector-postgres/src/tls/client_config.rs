@@ -8,17 +8,21 @@ use std::sync::Arc;
 
 use rustls::RootCertStore;
 
-use super::policy::{ConfigError, Mode, PemSource, Policy, validate_credentials};
+use super::policy::{ConfigError, Mode, Policy, validate_credentials};
 use super::verify::{AcceptAnyCertificate, ChainOnly, provider};
+use rdlt_connector_sdk::pem::Material;
 
 /// Resolve PEM material to bytes plus a label safe to put in an error — the
 /// label must never be the material itself, so an inline key cannot reach a
 /// log line through a failure path.
-fn pem_bytes(source: &PemSource, description: &str) -> Result<(String, Vec<u8>), ConfigError> {
+fn pem_bytes(source: &Material, description: &str) -> Result<(String, Vec<u8>), ConfigError> {
+    // The label is what an error may quote, so it is the source's own
+    // describe-rule: a path names itself, inline material never does.
+    // The description narrows the inline case to the credential it is.
     let label = if source.is_inline() {
         format!("<inline {description} pem>")
     } else {
-        source.0.clone()
+        source.describe()
     };
     let bytes = source.read().map_err(|e| ConfigError::ClientCredential {
         input: label.clone(),
@@ -78,11 +82,7 @@ fn root_store(policy: &Policy) -> Result<RootCertStore, ConfigError> {
     let mut store = RootCertStore::empty();
     match &policy.root_cert {
         Some(source) => {
-            let label = if source.is_inline() {
-                "<inline pem>".to_owned()
-            } else {
-                source.0.clone()
-            };
+            let label = source.describe();
             let bytes = source.read().map_err(|e| ConfigError::Setup {
                 subject: format!("root_cert `{label}`"),
                 detail: format!("unreadable: {e}"),
@@ -198,8 +198,8 @@ mod tests {
         Policy {
             mode,
             root_cert: None,
-            client_cert: certificate.map(|c| PemSource(c.into())),
-            client_key: key.map(|k| PemSource(k.into())),
+            client_cert: certificate.map(Material::new),
+            client_key: key.map(Material::new),
         }
     }
 
@@ -207,7 +207,7 @@ mod tests {
     fn root_errors_are_typed_and_name_the_input() {
         let missing = Policy {
             mode: Mode::VerifyFull,
-            root_cert: Some(PemSource("/nonexistent/ca.pem".into())),
+            root_cert: Some(Material::new("/nonexistent/ca.pem")),
             ..Policy::default()
         };
         let err = root_store(&missing).unwrap_err();
@@ -216,7 +216,7 @@ mod tests {
         // Inline garbage: the label says "inline", never the material.
         let garbage = Policy {
             mode: Mode::VerifyFull,
-            root_cert: Some(PemSource("-----BEGIN CERTIFICATE-----\ngarbage".into())),
+            root_cert: Some(Material::new("-----BEGIN CERTIFICATE-----\ngarbage")),
             ..Policy::default()
         };
         let message = root_store(&garbage).unwrap_err().to_string();
@@ -232,7 +232,7 @@ mod tests {
         let pem = authority.pem();
         let inline = Policy {
             mode: Mode::VerifyFull,
-            root_cert: Some(PemSource(pem.clone())),
+            root_cert: Some(Material::new(pem.clone())),
             ..Policy::default()
         };
         assert_eq!(root_store(&inline).expect("inline loads").len(), 1);
@@ -242,7 +242,7 @@ mod tests {
         std::fs::write(&path, pem).expect("write pem");
         let from_path = Policy {
             mode: Mode::VerifyCa,
-            root_cert: Some(PemSource(path.display().to_string())),
+            root_cert: Some(Material::new(path.display().to_string())),
             ..Policy::default()
         };
         assert_eq!(root_store(&from_path).expect("path loads").len(), 1);
@@ -306,7 +306,7 @@ mod tests {
             Mode::VerifyFull,
         ] {
             let mut with_root = policy(mode, Some(&certificate), Some(&key));
-            with_root.root_cert = Some(PemSource(authority.pem()));
+            with_root.root_cert = Some(Material::new(authority.pem()));
             assert!(
                 build(&with_root).expect("config builds").is_some(),
                 "mode {mode:?}"

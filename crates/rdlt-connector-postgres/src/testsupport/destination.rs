@@ -15,7 +15,7 @@ use arrow_array::{
 };
 use arrow_schema::{Field, Schema};
 use bytes::BytesMut;
-use rdlt_connector_sdk::spi::core::{ColumnType, LogicalType};
+use rdlt_connector_sdk::spi::core::{schema::ColumnType, types::LogicalType};
 use std::sync::Arc;
 
 use crate::types::encode;

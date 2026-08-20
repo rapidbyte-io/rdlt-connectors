@@ -13,7 +13,9 @@
 //! image so only genuinely missing work becomes a statement — the
 //! read-before-write economy the catalog module explains.
 
-use rdlt_connector_sdk::spi::core::{ColumnType, LogicalType, TableName, TableSchema, WriteMode};
+use rdlt_connector_sdk::spi::core::{
+    commit::WriteMode, id::TableName, schema::ColumnType, schema::TableSchema, types::LogicalType,
+};
 use rdlt_connector_sqlcore::ensure::{self, EnsureStep, Leg, Validity};
 use rdlt_connector_sqlcore::plan::ValidateError;
 use rdlt_connector_sqlcore::{DestinationOptions, FullLoadPublish};
@@ -236,12 +238,12 @@ pub(super) fn merge_ensure_stmts(
 
 #[cfg(test)]
 mod tests {
-    use rdlt_connector_sdk::spi::core::{ColumnDef, Provenance};
+    use rdlt_connector_sdk::spi::core::{schema::Column, schema::Provenance};
 
     use super::*;
 
-    fn column(name: &str, scalar: LogicalType, nullable: bool) -> ColumnDef {
-        ColumnDef {
+    fn column(name: &str, scalar: LogicalType, nullable: bool) -> Column {
+        Column {
             name: name.to_owned(),
             column_type: ColumnType::Scalar { scalar },
             nullable,

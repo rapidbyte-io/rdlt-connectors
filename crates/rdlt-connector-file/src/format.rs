@@ -75,10 +75,10 @@ mod tests {
             ("parquet", Format::Parquet),
             ("csv", Format::Csv),
         ] {
-            let parsed: Format = serde_yaml::from_str(text).expect("parses");
+            let parsed: Format = serde_yaml_ng::from_str(text).expect("parses");
             assert_eq!(parsed, format);
             assert_eq!(
-                serde_yaml::to_string(&format).expect("renders").trim(),
+                serde_yaml_ng::to_string(&format).expect("renders").trim(),
                 text
             );
         }

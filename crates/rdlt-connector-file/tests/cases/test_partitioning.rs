@@ -2,6 +2,7 @@
 //! encoded slugs, and final names independent of cross-table arrival
 //! order.
 
+use rdlt_connector_file::destination::parts;
 use std::sync::Arc;
 
 use arrow::array::{Int64Array, StringArray};
@@ -9,15 +10,18 @@ use arrow::datatypes::{DataType, Field, Schema};
 use rdlt_connector_file::destination;
 use rdlt_connector_sdk::spi::core::types::LogicalType;
 use rdlt_connector_sdk::spi::core::{
-    ColumnDef, ColumnType, LoadId, PipelineId, Provenance, TableName, TableSchema, WriteMode,
+    commit::WriteMode, id::LoadId, id::PipelineId, id::TableName, schema::Column,
+    schema::ColumnType, schema::Provenance, schema::TableSchema,
 };
-use rdlt_connector_sdk::spi::{Destination, OpenContext, RecordBatch};
-use rdlt_testkit::commit_meta_for;
+use rdlt_connector_sdk::spi::{
+    arrow::RecordBatch, destination::Destination, destination::OpenContext,
+};
+use rdlt_testkit::fixtures::commit_meta_for;
 
 use super::common::local_dest;
 
 fn partitioned_schema(table: &str) -> TableSchema {
-    let col = |name: &str, ty| ColumnDef {
+    let col = |name: &str, ty| Column {
         name: name.to_owned(),
         column_type: ColumnType::scalar(ty),
         nullable: true,
@@ -128,8 +132,7 @@ async fn a_missing_partition_column_refuses_at_write() {
 #[tokio::test]
 async fn final_names_independent_of_cross_table_arrival_order() {
     let dir = tempfile::tempdir().expect("tempdir");
-    let config =
-        local_dest(dir.path()).with_parts(rdlt_connector_sdk::spi::PartOptions::per_write());
+    let config = local_dest(dir.path()).with_parts(parts::Options::per_write());
     let dest = destination::Shell::new(config).expect("valid");
     let pipeline = PipelineId::new("arrival-order");
     let load = LoadId::new("load-a");

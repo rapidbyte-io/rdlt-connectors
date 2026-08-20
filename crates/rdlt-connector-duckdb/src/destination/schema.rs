@@ -3,7 +3,9 @@
 //! read, so the DDL this destination would run is testable without a
 //! connection.
 
-use rdlt_connector_sdk::spi::core::{ColumnType, LogicalType, TableSchema, WriteMode};
+use rdlt_connector_sdk::spi::core::{
+    commit::WriteMode, schema::ColumnType, schema::TableSchema, types::LogicalType,
+};
 use rdlt_connector_sqlcore::ensure::{self, EnsureStep, Leg, Validity};
 use rdlt_connector_sqlcore::plan::ValidateError;
 use rdlt_connector_sqlcore::protocol::FullLoadPublish;
@@ -22,7 +24,7 @@ pub(crate) fn stage_name(table: &str) -> String {
     format!(
         "{}{}",
         names::STAGE_PREFIX,
-        rdlt_connector_sdk::spi::core::naming::ident_hash(table, 16)
+        rdlt_connector_sdk::spi::core::schema::ident_hash(table, 16)
     )
 }
 

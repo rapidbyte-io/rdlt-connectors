@@ -4,9 +4,10 @@
 //! partitioned ones through the library's fanout writer with a
 //! splitter computing partition values from source columns. Closing
 //! yields the staged data files the commit loop appends. This module
-//! also owns the ONE translation from the SPI's `ParquetOptions` to
+//! also owns the ONE translation from the shared `ParquetOptions` to
 //! the parquet library's writer properties.
 
+use super::parquet::{Compression as ParquetCompression, Options as ParquetOptions};
 use iceberg::arrow::RecordBatchPartitionSplitter;
 use iceberg::spec::DataFileFormat;
 use iceberg::writer::base_writer::data_file_writer::DataFileWriterBuilder;
@@ -21,7 +22,7 @@ use iceberg::writer::{IcebergWriter, IcebergWriterBuilder as _};
 use parquet::basic::{BrotliLevel, Compression, GzipLevel, ZstdLevel};
 use parquet::file::properties::WriterProperties;
 use rdlt_connector_sdk::spi::core::crash_point;
-use rdlt_connector_sdk::spi::{DestinationError, ParquetCompression, ParquetOptions};
+use rdlt_connector_sdk::spi::error::DestinationError;
 
 use super::client::classify;
 
@@ -166,6 +167,9 @@ pub(super) fn writer_properties(options: &ParquetOptions) -> Result<WriterProper
     Ok(builder.build())
 }
 
+/// Exhaustive on purpose: the codec vocabulary is this connector's own,
+/// so a codec added to it must be given a translation here rather than
+/// falling through a catch-all that would refuse it at runtime.
 fn compression(options: &ParquetOptions) -> Result<Compression, String> {
     let level = options.compression_level;
     let unsigned = |what: &str| -> Result<u32, String> {
@@ -197,12 +201,6 @@ fn compression(options: &ParquetOptions) -> Result<Compression, String> {
         (ParquetCompression::Zstd, None) => Compression::ZSTD(ZstdLevel::default()),
         (ParquetCompression::Zstd, Some(level)) => {
             Compression::ZSTD(ZstdLevel::try_new(level).map_err(|e| bad("zstd", e))?)
-        }
-        (other, _) => {
-            return Err(format!(
-                "compression `{}` is not supported by the iceberg destination",
-                other.as_str()
-            ));
         }
     })
 }

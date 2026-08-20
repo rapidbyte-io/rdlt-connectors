@@ -4,7 +4,8 @@
 
 use rdlt_connector_rest::source::Shell;
 use rdlt_connector_sdk::spi::{
-    Cursor, PushPayload, ReadRequest, Source, SourceError, records_channel,
+    channel::PushPayload, channel::records, core::cursor::Cursor, error::SourceError,
+    source::ReadRequest, source::Source,
 };
 
 pub struct ReadOutcome {
@@ -17,7 +18,7 @@ pub struct ReadOutcome {
 /// read.
 pub async fn read_stream(yaml: &str, stream: &str, since: Option<Cursor>) -> ReadOutcome {
     let source = Shell::from_yaml(yaml).expect("config parses");
-    let (out, mut input) = records_channel(1 << 20);
+    let (out, mut input) = records(1 << 20);
     let specs = source.streams().await.expect("streams");
     let spec = specs
         .iter()

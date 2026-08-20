@@ -11,7 +11,7 @@
 //! the on-disk contract and catch an accidental rename.
 //!
 //! (System COLUMN names — `_rdlt_id` etc. — live in
-//! `rdlt_core::schema::system_columns`: the engine writes those. scd2
+//! `rdlt_core::schema::system`: the engine writes those. scd2
 //! validity defaults live in [`crate::options`] and ARE user-overridable —
 //! they name user-visible data columns, not protocol state.)
 
@@ -59,8 +59,8 @@ pub const ARRIVAL_COL: &str = "__rdlt_arrival";
 pub fn stage_table(pipeline: &str, table: &str) -> String {
     format!(
         "{STAGE_PREFIX}{}_{}",
-        rdlt_connector::core::naming::ident_hash(pipeline, 8),
-        rdlt_connector::core::naming::ident_hash(table, 16)
+        rdlt_connector::core::schema::ident_hash(pipeline, 8),
+        rdlt_connector::core::schema::ident_hash(table, 16)
     )
 }
 
@@ -81,7 +81,7 @@ pub fn index_name(unique: bool, table: &str, columns: &[String]) -> String {
     };
     format!(
         "{prefix}_{}",
-        rdlt_connector::core::naming::ident_hash(&format!("{table}:{}", columns.join(",")), 16)
+        rdlt_connector::core::schema::ident_hash(&format!("{table}:{}", columns.join(",")), 16)
     )
 }
 

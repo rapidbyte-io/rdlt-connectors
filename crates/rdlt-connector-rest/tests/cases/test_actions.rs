@@ -427,13 +427,13 @@ async fn incremental_start_and_end_params_bind() {
     let outcome = read_stream(
         &yaml,
         "items",
-        Some(rdlt_connector_sdk::spi::Cursor::new("5")),
+        Some(rdlt_connector_sdk::spi::core::cursor::Cursor::new("5")),
     )
     .await;
     outcome.result.expect("windowed read");
     assert_eq!(outcome.rows.len(), 1);
     assert_eq!(
         outcome.checkpoints.last(),
-        Some(&rdlt_connector_sdk::spi::Cursor::new("7"))
+        Some(&rdlt_connector_sdk::spi::core::cursor::Cursor::new("7"))
     );
 }

@@ -15,10 +15,12 @@
 //! Refusals name the field at fault, because editing that field is
 //! always the user's next action.
 
+use super::parts;
 use std::collections::BTreeMap;
 
 use rdlt_connector_sdk::config::Document;
-use rdlt_connector_sdk::spi::{PemSource, Secret};
+use rdlt_connector_sdk::pem::Material;
+use rdlt_connector_sdk::spi::secret::Secret;
 use rdlt_connector_sqlcore::DestinationOptions;
 use serde::{Deserialize, Serialize};
 
@@ -68,7 +70,7 @@ pub struct Config {
     /// recommended band. Rows accumulate in memory until a part
     /// closes, which is what `max_open_bytes` bounds.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub parts: Option<rdlt_connector_sdk::spi::PartOptions>,
+    pub parts: Option<parts::Options>,
     /// The shared SQL-destination options (merge strategy, hard delete,
     /// dedup sort, merge scope, scd2), flattened so the document reads
     /// identically on every SQL destination.
@@ -108,7 +110,7 @@ pub struct Auth {
 #[non_exhaustive]
 pub struct KeyPair {
     /// The private key: a path to a `.p8` file, or inline PEM text.
-    pub private_key: PemSource,
+    pub private_key: Material,
     /// Required exactly when the key is encrypted. The mismatch
     /// surfaces at CONNECT time through the library, wrapped in the
     /// connect identity frame — parse-time validation cannot check it
@@ -195,8 +197,8 @@ impl std::fmt::Display for ConfigError {
 
 impl std::error::Error for ConfigError {}
 
-impl From<serde_yaml::Error> for ConfigError {
-    fn from(error: serde_yaml::Error) -> Self {
+impl From<serde_yaml_ng::Error> for ConfigError {
+    fn from(error: serde_yaml_ng::Error) -> Self {
         Self::Yaml(error.to_string())
     }
 }
@@ -348,7 +350,7 @@ impl Auth {
 
 impl KeyPair {
     /// A key that needs no passphrase.
-    pub fn new(private_key: impl Into<PemSource>) -> Self {
+    pub fn new(private_key: impl Into<Material>) -> Self {
         Self {
             private_key: private_key.into(),
             passphrase: None,
@@ -426,7 +428,7 @@ mod tests {
     fn yaml_parse_failures_are_typed_and_render_bare() {
         let err = Config::from_yaml(": not yaml").expect_err("refused");
         assert!(matches!(err, ConfigError::Yaml(_)), "{err:?}");
-        let parser_text = serde_yaml::from_str::<Config>(": not yaml")
+        let parser_text = serde_yaml_ng::from_str::<Config>(": not yaml")
             .expect_err("parse fails")
             .to_string();
         assert_eq!(err.to_string(), parser_text);

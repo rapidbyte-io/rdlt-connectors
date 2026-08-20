@@ -10,6 +10,8 @@
 //! parts and their journey through the service's storage; `load` the
 //! sdk-`Backend` coordinator over all of them.
 
+pub mod parts;
+
 mod catalog;
 pub(crate) mod client;
 mod config;

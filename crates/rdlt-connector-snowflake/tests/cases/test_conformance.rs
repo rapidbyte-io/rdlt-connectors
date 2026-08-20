@@ -2,9 +2,12 @@
 //! connector passes the SAME testkit kit every destination answers to.
 
 use async_trait::async_trait;
-use rdlt_connector_sdk::spi::core::TableName;
+use rdlt_connector_sdk::spi::core::id::TableName;
 use rdlt_connector_snowflake::destination::{Shell, testhook};
-use rdlt_testkit::{ProbeError, TableProbe, assert_conformant, verify_destination};
+use rdlt_testkit::{
+    conformance::assert_conformant, conformance::destination::ProbeError,
+    conformance::destination::TableProbe, conformance::destination::verify as verify_destination,
+};
 
 use super::common::{config_for, credentials, scratch_schema};
 

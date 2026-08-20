@@ -3,7 +3,7 @@
 //! Depends on cursor-ordered streams (NULLS FIRST, direction-aligned) — the
 //! SQL ORDER BY guarantees it.
 
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 use super::state::{State, scalar_at};
 use crate::source::errors::{self, Phase};

@@ -2,9 +2,9 @@
 
 #[cfg(test)]
 mod tests {
-    use rdlt_connector::WriteMode;
-    use rdlt_connector::core::TableSchema;
-    use rdlt_connector::core::{ColumnDef, LogicalType, TableName};
+    use rdlt_connector::core::commit::WriteMode;
+    use rdlt_connector::core::schema::TableSchema;
+    use rdlt_connector::core::{id::TableName, schema::Column, types::LogicalType};
 
     use crate::cases::common::{col, merge};
     use rdlt_connector_sqlcore::ensure::*;
@@ -12,7 +12,7 @@ mod tests {
     use rdlt_connector_sqlcore::options::MergeStrategy;
     use rdlt_connector_sqlcore::protocol::FullLoadPublish;
 
-    fn schema(columns: Vec<ColumnDef>) -> TableSchema {
+    fn schema(columns: Vec<Column>) -> TableSchema {
         TableSchema {
             table: TableName::from("events"),
             parent: None,

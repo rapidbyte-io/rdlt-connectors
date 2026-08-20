@@ -2,9 +2,9 @@
 
 use rdlt_connector_duckdb::destination::{self, Config, Shell};
 use rdlt_connector_sdk::config::Document;
-use rdlt_connector_sdk::spi::core::{LoadId, PipelineId, TableName, WriteMode};
-use rdlt_connector_sdk::spi::{Destination, OpenContext};
-use rdlt_testkit::{batch_of, commit_meta_for, schema_for};
+use rdlt_connector_sdk::spi::core::{commit::WriteMode, id::LoadId, id::PipelineId, id::TableName};
+use rdlt_connector_sdk::spi::{destination::Destination, destination::OpenContext};
+use rdlt_testkit::fixtures::{batch_of, commit_meta_for, schema_for};
 
 /// The frozen bare-identifier refusal, now at the Document gate.
 #[test]

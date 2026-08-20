@@ -3,7 +3,8 @@
 //! rather than trusting a stale offset.
 
 use rdlt_connector_file::{destination, source};
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 use super::common::{jsonl_source, local_dest, plant};
 
@@ -139,7 +140,7 @@ async fn a_shrunken_file_refuses() {
 /// resume under 4 KiB of growth poisoned the record).
 #[tokio::test]
 async fn an_unverified_resume_records_a_tail_the_next_resume_can_verify() {
-    use rdlt_connector_sdk::spi::core::naming::ident_hash;
+    use rdlt_connector_sdk::spi::core::schema::ident_hash;
 
     let input = tempfile::tempdir().expect("input");
     let out = tempfile::tempdir().expect("out");

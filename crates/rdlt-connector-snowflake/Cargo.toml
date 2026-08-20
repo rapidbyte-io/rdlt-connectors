@@ -34,7 +34,7 @@ required-features = ["bin-serve"]
 # The ONE rdlt dependency (the one-dependency rule): the SPI is reached
 # through the sdk's `spi` re-export. sqlcore is the RECORDED exception
 # for SQL destinations — the shared merge core.
-rdlt-connector-sdk = { workspace = true, features = ["schema"] }
+rdlt-connector-sdk = { workspace = true, features = ["schema", "pem"] }
 # The server binary's argument surface alone (`--role`, the free
 # `--version`); optional so the library surface never carries it.
 clap = { workspace = true, optional = true }
@@ -46,8 +46,9 @@ async-trait = { workspace = true }
 parquet = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }
+thiserror = { workspace = true }
 serde_json = { workspace = true }
-serde_yaml = { workspace = true }
+serde_yaml_ng = { workspace = true }
 snowflake-connector-rs = { workspace = true }
 tokio = { workspace = true }
 

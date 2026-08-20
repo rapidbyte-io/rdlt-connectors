@@ -18,7 +18,7 @@ use std::ops::ControlFlow;
 
 use arrow::array::RecordBatch;
 use rdlt_connector_sdk::source::Feed;
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 use super::batch::BatchBuilder;
 use super::client::{Client, quote_table, quote_upper};

@@ -7,7 +7,8 @@
 
 use rdlt_connector_duckdb::destination as duck;
 use rdlt_connector_file::source;
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 fn plant(dir: &std::path::Path, name: &str, bytes: &[u8]) {
     let path = dir.join(name);

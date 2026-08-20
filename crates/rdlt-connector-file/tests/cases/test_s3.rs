@@ -4,7 +4,8 @@
 
 use rdlt_connector_file::{destination, source};
 use rdlt_connector_sdk::config::Document;
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 use super::common::local_dest;
 use super::s3;
@@ -120,9 +121,11 @@ async fn the_destination_publishes_and_clears_its_staging() {
 /// second attempt had never happened.
 #[tokio::test]
 async fn a_second_session_is_refused_live_against_s3_and_the_first_still_publishes() {
-    use rdlt_connector_sdk::spi::core::{LoadId, PipelineId, TableName, WriteMode};
-    use rdlt_connector_sdk::spi::{Destination, OpenContext};
-    use rdlt_testkit::{batch_of, commit_meta_for, schema_for};
+    use rdlt_connector_sdk::spi::core::{
+        commit::WriteMode, id::LoadId, id::PipelineId, id::TableName,
+    };
+    use rdlt_connector_sdk::spi::{destination::Destination, destination::OpenContext};
+    use rdlt_testkit::fixtures::{batch_of, commit_meta_for, schema_for};
 
     let Some(fixture) = S3Fixture::start().await else {
         return;
@@ -198,7 +201,7 @@ async fn s3_publish_sweeps_a_predecessors_same_commit_finals() {
     fixture
         .put("lake/events/part-load-a-1-1.jsonl", b"crashed residue")
         .await;
-    let scope = rdlt_connector_sdk::spi::core::naming::ident_hash("s3-sweep", 12);
+    let scope = rdlt_connector_sdk::spi::core::schema::ident_hash("s3-sweep", 12);
     fixture
         .put(
             &format!("lake/_rdlt_manifest.{scope}.json"),
@@ -226,9 +229,11 @@ async fn s3_publish_sweeps_a_predecessors_same_commit_finals() {
     let mut value = serde_json::to_value(&dest_config).expect("value");
     value["format"] = "jsonl".into();
     let dest_config = destination::Config::from_value(value).expect("valid");
-    use rdlt_connector_sdk::spi::core::{LoadId, PipelineId, TableName, WriteMode};
-    use rdlt_connector_sdk::spi::{Destination, OpenContext};
-    use rdlt_testkit::{batch_of, commit_meta_for, schema_for};
+    use rdlt_connector_sdk::spi::core::{
+        commit::WriteMode, id::LoadId, id::PipelineId, id::TableName,
+    };
+    use rdlt_connector_sdk::spi::{destination::Destination, destination::OpenContext};
+    use rdlt_testkit::fixtures::{batch_of, commit_meta_for, schema_for};
     let dest = destination::Shell::new(dest_config).expect("valid");
     let pipeline = PipelineId::new("s3-sweep");
     let load = LoadId::new("load-a");
@@ -281,9 +286,11 @@ async fn s3_replace_never_deletes_user_files() {
     let dest_config = destination::Config::from_value(value).expect("valid");
     // Replace mode arrives from the engine's write disposition; drive
     // the SPI directly for an unambiguous Replace commit.
-    use rdlt_connector_sdk::spi::core::{LoadId, PipelineId, TableName, WriteMode};
-    use rdlt_connector_sdk::spi::{Destination, OpenContext};
-    use rdlt_testkit::{batch_of, commit_meta_for, schema_for};
+    use rdlt_connector_sdk::spi::core::{
+        commit::WriteMode, id::LoadId, id::PipelineId, id::TableName,
+    };
+    use rdlt_connector_sdk::spi::{destination::Destination, destination::OpenContext};
+    use rdlt_testkit::fixtures::{batch_of, commit_meta_for, schema_for};
     let _ = workdir;
     let dest = destination::Shell::new(dest_config.clone()).expect("valid");
     let pipeline = PipelineId::new("s3-replace");

@@ -5,8 +5,11 @@
 
 use async_trait::async_trait;
 use rdlt_connector_sdk::destination::DestinationConnector;
-use rdlt_connector_sdk::spi::core::naming::IdentRules;
-use rdlt_connector_sdk::spi::{DestinationCapabilities, DestinationError, OpenContext};
+use rdlt_connector_sdk::spi::core::schema::IdentRules;
+use rdlt_connector_sdk::spi::{
+    destination::Capabilities as DestinationCapabilities, destination::OpenContext,
+    error::DestinationError,
+};
 use rdlt_connector_sqlcore::quote_identifier;
 
 use super::catalog::{Catalog, stage_prefix};

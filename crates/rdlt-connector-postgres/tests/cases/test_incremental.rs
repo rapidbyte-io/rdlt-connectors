@@ -12,7 +12,8 @@ use crate::cases::common;
 use rdlt_connector_duckdb::destination as duck;
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 use rdlt_connector_postgres::source;
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 const BASE: &str = r#"
 CREATE TABLE ev (id int8 PRIMARY KEY, v text, ts timestamptz);
@@ -398,7 +399,7 @@ async fn merge_by_declared_key_converges_and_keyless_is_rejected() {
 
     let merge_config = |pipeline: &str| {
         let mut config = EngineConfig::new(pipeline);
-        config = config.with_write_mode(rdlt_connector_sdk::spi::core::WriteMode::Merge {
+        config = config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
             key: vec!["id".into()],
         });
         config
@@ -462,7 +463,7 @@ async fn merge_by_declared_key_converges_and_keyless_is_rejected() {
     let destination = duck::Shell::new(duck::Config::new(directory.path().join("nokey.duckdb")))
         .expect("open db");
     let mut config = merge_config("inc-merge-nokey");
-    config = config.with_write_mode(rdlt_connector_sdk::spi::core::WriteMode::Merge {
+    config = config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
         key: vec!["x".into()],
     });
     let error = Engine::new(config, keyless, destination)
@@ -496,9 +497,10 @@ async fn lag_captures_late_arrivals_with_exact_totals_under_merge() {
         let destination = harness.destination.shell();
         async move {
             let mut config = EngineConfig::new("inc-lag");
-            config = config.with_write_mode(rdlt_connector_sdk::spi::core::WriteMode::Merge {
-                key: vec!["id".into()],
-            });
+            config =
+                config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
+                    key: vec!["id".into()],
+                });
             Engine::new(config, postgres_source, destination)
                 .run()
                 .await
@@ -541,7 +543,7 @@ async fn lag_captures_late_arrivals_with_exact_totals_under_merge() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn lag_rejections_are_typed_and_early() {
-    use rdlt_connector_sdk::spi::Source as _;
+    use rdlt_connector_sdk::spi::source::Source as _;
     let Some(fixture) = PostgresContainer::start().await else {
         return;
     };
@@ -816,7 +818,7 @@ async fn magnitude_lag_for_integer_cursors() {
     };
     let run = |postgres_source| {
         let mut config = EngineConfig::new("int-lag");
-        config = config.with_write_mode(rdlt_connector_sdk::spi::WriteMode::Merge {
+        config = config.with_write_mode(rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
             key: vec!["id".into()],
         });
         Engine::new(config, postgres_source, harness.destination.shell())

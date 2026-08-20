@@ -9,18 +9,21 @@ use std::sync::Arc;
 use arrow_array::{Decimal128Array, Int64Array, RecordBatch, StringArray};
 use arrow_schema::{DataType, Field, Schema};
 use rdlt_connector_sdk::spi::core::{
-    ColumnDef, ColumnType, LoadId, LogicalType, PipelineId, Provenance, TableName, TableSchema,
+    id::LoadId, id::PipelineId, id::TableName, schema::Column, schema::ColumnType,
+    schema::Provenance, schema::TableSchema, types::LogicalType,
 };
-use rdlt_connector_sdk::spi::{Destination as _, OpenContext, WriteMode};
-use rdlt_testkit::TableProbe as _;
-use rdlt_testkit::commit_meta_for;
+use rdlt_connector_sdk::spi::{
+    core::commit::WriteMode, destination::Destination as _, destination::OpenContext,
+};
+use rdlt_testkit::conformance::destination::TableProbe as _;
+use rdlt_testkit::fixtures::commit_meta_for;
 
 use crate::cases::common;
 use rdlt_connector_postgres::destination;
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 
-fn column(name: &str, scalar: LogicalType, nullable: bool) -> ColumnDef {
-    ColumnDef {
+fn column(name: &str, scalar: LogicalType, nullable: bool) -> Column {
+    Column {
         name: name.into(),
         column_type: ColumnType::Scalar { scalar },
         nullable,

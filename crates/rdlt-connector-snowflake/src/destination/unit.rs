@@ -20,7 +20,7 @@
 //! pinned by the live semantics suite.
 
 use async_trait::async_trait;
-use rdlt_connector_sdk::spi::DestinationError;
+use rdlt_connector_sdk::spi::error::DestinationError;
 
 use super::client::Executor;
 

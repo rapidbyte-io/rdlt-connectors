@@ -10,9 +10,9 @@ use std::os::unix::fs::PermissionsExt;
 use duckdb::Connection;
 use rdlt_connector_duckdb::destination::{self, Config, Shell};
 use rdlt_connector_sdk::config::Document;
-use rdlt_connector_sdk::spi::core::{LoadId, PipelineId, TableName, WriteMode};
-use rdlt_connector_sdk::spi::{Destination, OpenContext};
-use rdlt_testkit::{batch_of, commit_meta_for, schema_for};
+use rdlt_connector_sdk::spi::core::{commit::WriteMode, id::LoadId, id::PipelineId, id::TableName};
+use rdlt_connector_sdk::spi::{destination::Destination, destination::OpenContext};
+use rdlt_testkit::fixtures::{batch_of, commit_meta_for, schema_for};
 
 fn memdb() -> Connection {
     Connection::open_in_memory().expect("bundled in-memory duckdb")

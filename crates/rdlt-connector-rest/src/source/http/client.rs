@@ -4,7 +4,7 @@
 
 use std::time::{Duration, Instant};
 
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 use reqwest::header::{HeaderName, HeaderValue};
 
 use super::Credentials;

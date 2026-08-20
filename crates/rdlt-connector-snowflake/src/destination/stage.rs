@@ -14,8 +14,9 @@
 
 use std::path::{Path, PathBuf};
 
-use rdlt_connector_sdk::spi::DestinationError;
-use rdlt_connector_sdk::spi::core::{crash_point, naming::ident_hash};
+use rdlt_connector_sdk::spi::core::crash_point;
+use rdlt_connector_sdk::spi::core::schema::ident_hash;
+use rdlt_connector_sdk::spi::error::DestinationError;
 
 use super::client::Executor;
 

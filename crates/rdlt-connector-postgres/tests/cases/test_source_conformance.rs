@@ -12,7 +12,8 @@ use crate::cases::common;
 use rdlt_connector_duckdb::destination as duck;
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 use rdlt_connector_postgres::source;
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 const TYPE_MATRIX_SEED: &str = r#"
 CREATE TYPE mood AS ENUM ('happy', 'grumpy');
@@ -60,7 +61,10 @@ INSERT INTO type_matrix (i8, tstz, d) VALUES (3, 'infinity', '-infinity');
 async fn run_to_duckdb(
     postgres_source: source::Shell,
     pipeline: &str,
-) -> (common::DuckDbDest, rdlt_engine::RunReport) {
+) -> (
+    common::DuckDbDest,
+    rdlt_connector_sdk::spi::core::report::Run,
+) {
     let destination = common::duckdb_destination();
     let report = Engine::new(
         EngineConfig::new(pipeline),
@@ -446,7 +450,7 @@ async fn empty_table_materializes_with_schema() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn drift_column_added_dropped_retyped() {
-    use rdlt_connector_sdk::spi::Source as _;
+    use rdlt_connector_sdk::spi::source::Source as _;
 
     // ADDED between reflect and read: this run projects the reflected
     // columns only (discovery is once per run); the NEXT run evolves.
@@ -559,7 +563,7 @@ async fn drift_table_dropped_between_reflect_and_read() {
         .await;
     let postgres_source = common::source(&fixture.connection_string, "tables:\n  - name: doomed\n");
     // Prime reflection (as the engine's stream discovery would)…
-    use rdlt_connector_sdk::spi::Source as _;
+    use rdlt_connector_sdk::spi::source::Source as _;
     let specs = postgres_source.streams().await.expect("streams");
     assert_eq!(specs.len(), 1);
     // …then drift: the table vanishes before read.

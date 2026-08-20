@@ -16,6 +16,7 @@
 //! 4. RECORD state, then the receipt LAST — the durable idempotency
 //!    guard.
 
+use super::parts;
 use std::collections::{BTreeMap, BTreeSet};
 
 use async_trait::async_trait;
@@ -23,9 +24,10 @@ use parquet::file::properties::WriterProperties;
 use rdlt_connector_sdk::destination::Backend;
 use rdlt_connector_sdk::spi::core::crash_point;
 use rdlt_connector_sdk::spi::core::{
-    CommitMeta, CommitReceipt, LoadId, PipelineId, StateDoc, TableName, TableSchema, WriteMode,
+    commit::CommitMeta, commit::CommitReceipt, commit::WriteMode, id::LoadId, id::PipelineId,
+    id::TableName, schema::TableSchema, state::StateDoc,
 };
-use rdlt_connector_sdk::spi::{DestinationError, RecordBatch};
+use rdlt_connector_sdk::spi::{arrow::RecordBatch, error::DestinationError};
 
 use super::config::DestFormat;
 use super::layout::{
@@ -40,8 +42,8 @@ use crate::location::Location;
 /// Part sizing and its telemetry, grouped: the options that decide
 /// when a part closes travel with the listener told when one does.
 pub(super) struct PartsWiring {
-    pub(super) options: rdlt_connector_sdk::spi::PartOptions,
-    pub(super) events: Option<rdlt_connector_sdk::spi::PartEventFn>,
+    pub(super) options: parts::Options,
+    pub(super) events: Option<rdlt_connector_sdk::spi::destination::PartEventFn>,
 }
 
 /// The identity `Load::open` acquires the session lease under (037 US2
@@ -83,14 +85,14 @@ pub struct Load {
     /// where 4 were loaded).
     staged: Vec<StagedPart>,
     /// When a part is closed and the next begun.
-    parts: rdlt_connector_sdk::spi::PartOptions,
+    parts: parts::Options,
     /// Parts still being written, keyed by table and partition — a
     /// part holds one table's rows for one partition, so those two
     /// are what identify it.
     open: BTreeMap<(String, Option<String>), (OpenPart, std::time::Instant)>,
     /// Where closed parts are reported. Advisory: absent changes
     /// nothing about what is written.
-    part_events: Option<rdlt_connector_sdk::spi::PartEventFn>,
+    part_events: Option<rdlt_connector_sdk::spi::destination::PartEventFn>,
     /// This session's hold on the destination scope (037 US2 T7; fix
     /// round 1 moved the release point). `Some` from a successful
     /// `open` until `Backend::close` releases it — the sdk's success-
@@ -193,7 +195,7 @@ impl Load {
     async fn close_part(
         &mut self,
         key: &(String, Option<String>),
-        reason: rdlt_connector_sdk::spi::PartCloseReason,
+        reason: rdlt_connector_sdk::spi::destination::PartCloseReason,
     ) -> Result<(), DestinationError> {
         let Some((open, _)) = self.open.remove(key) else {
             return Ok(());
@@ -221,8 +223,8 @@ impl Load {
         // Reported once STAGED — the bytes are final and durable-ish;
         // the exact size is the file's, never an estimate.
         if let Some(listener) = &self.part_events {
-            listener(rdlt_connector_sdk::spi::PartClosed::new(
-                rdlt_connector_sdk::spi::core::TableName::new(table.as_str()),
+            listener(rdlt_connector_sdk::spi::destination::PartClosed::new(
+                rdlt_connector_sdk::spi::core::id::TableName::new(table.as_str()),
                 encoded_bytes,
                 reason,
             ));
@@ -250,8 +252,11 @@ impl Load {
             else {
                 return Ok(());
             };
-            self.close_part(&largest, rdlt_connector_sdk::spi::PartCloseReason::Budget)
-                .await?;
+            self.close_part(
+                &largest,
+                rdlt_connector_sdk::spi::destination::PartCloseReason::Budget,
+            )
+            .await?;
         }
     }
 
@@ -263,8 +268,11 @@ impl Load {
     async fn close_all_parts(&mut self) -> Result<(), DestinationError> {
         let keys: Vec<_> = self.open.keys().cloned().collect();
         for key in keys {
-            self.close_part(&key, rdlt_connector_sdk::spi::PartCloseReason::Commit)
-                .await?;
+            self.close_part(
+                &key,
+                rdlt_connector_sdk::spi::destination::PartCloseReason::Commit,
+            )
+            .await?;
         }
         Ok(())
     }
@@ -334,8 +342,11 @@ impl Backend for Load {
                 .get(&key)
                 .is_some_and(|(open, _)| open.schema_differs(&group));
             if schema_changed {
-                self.close_part(&key, rdlt_connector_sdk::spi::PartCloseReason::Schema)
-                    .await?;
+                self.close_part(
+                    &key,
+                    rdlt_connector_sdk::spi::destination::PartCloseReason::Schema,
+                )
+                .await?;
             }
             let (open, opened_at) = match self.open.remove(&key) {
                 Some(existing) => existing,
@@ -355,9 +366,9 @@ impl Backend for Load {
                 // Which threshold fired decides the reported reason;
                 // when both did in one write, size is the truer cause.
                 let reason = if self.parts.target_bytes.is_some_and(|t| encoded >= t.max(1)) {
-                    rdlt_connector_sdk::spi::PartCloseReason::Target
+                    rdlt_connector_sdk::spi::destination::PartCloseReason::Target
                 } else {
-                    rdlt_connector_sdk::spi::PartCloseReason::Time
+                    rdlt_connector_sdk::spi::destination::PartCloseReason::Time
                 };
                 self.close_part(&key, reason).await?;
             }

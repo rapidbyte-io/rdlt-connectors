@@ -8,8 +8,12 @@
 
 use std::collections::BTreeMap;
 
-use rdlt_connector_sdk::spi::core::{ColumnDef, ColumnType, LogicalType, PipelineId, TableName};
-use rdlt_connector_sdk::spi::{DestinationError, WriteMode, core::TableSchema};
+use rdlt_connector_sdk::spi::core::{
+    id::PipelineId, id::TableName, schema::Column, schema::ColumnType, types::LogicalType,
+};
+use rdlt_connector_sdk::spi::{
+    core::commit::WriteMode, core::schema::TableSchema, error::DestinationError,
+};
 use rdlt_connector_sqlcore::ensure::{self, EnsureStep, Leg, Validity};
 use rdlt_connector_sqlcore::plan::ValidateError;
 use rdlt_connector_sqlcore::{FullLoadPublish, quote_identifier};
@@ -27,7 +31,7 @@ pub fn stage_prefix(pipeline: &PipelineId) -> String {
     format!(
         "{}{}_",
         rdlt_connector_sqlcore::names::STAGE_PREFIX,
-        rdlt_connector_sdk::spi::core::naming::ident_hash(pipeline.as_str(), 8)
+        rdlt_connector_sdk::spi::core::schema::ident_hash(pipeline.as_str(), 8)
     )
 }
 
@@ -63,7 +67,7 @@ pub fn sql_type(column_type: &ColumnType) -> String {
 /// One column definition for CREATE TABLE. NOT NULL applies to the TARGET
 /// table only (CREATE-time; migrations stay additive) — stage tables keep
 /// everything nullable.
-pub fn render_column_definition(column: &ColumnDef, for_target: bool) -> String {
+pub fn render_column_definition(column: &Column, for_target: bool) -> String {
     let not_null = if for_target && !column.nullable {
         " NOT NULL"
     } else {

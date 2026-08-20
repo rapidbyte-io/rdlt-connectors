@@ -18,6 +18,6 @@ use rdlt_connector_snowflake::destination::Snowflake;
 rdlt_connector_sdk::serve_main! {
     about: "rdlt snowflake connector (destination) — a protocol server (ADR 0001)",
     roles: {
-        Destination => rdlt_connector_sdk::serve::destination::destination::<Snowflake>(),
+        Destination => rdlt_connector_sdk::serve::destination::run::<Snowflake>(),
     }
 }

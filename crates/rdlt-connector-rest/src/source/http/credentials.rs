@@ -6,7 +6,7 @@
 
 use std::time::{Duration, Instant};
 
-use rdlt_connector_sdk::spi::{Secret, SourceError};
+use rdlt_connector_sdk::spi::{error::SourceError, secret::Secret};
 
 use crate::source::config::{Auth, KeyLocation};
 

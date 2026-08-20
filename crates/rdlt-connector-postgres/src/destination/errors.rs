@@ -2,7 +2,7 @@
 //! source half: every failure names its phase, and retry-worthiness is
 //! decided by the session's shared SQLSTATE rules, never ad hoc.
 
-use rdlt_connector_sdk::spi::DestinationError;
+use rdlt_connector_sdk::spi::error::DestinationError;
 
 /// Where in the load-session lifecycle a failure happened.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

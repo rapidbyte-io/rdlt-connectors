@@ -13,7 +13,7 @@
 //! drifts silently, which is exactly how a stage table and a commit plan come
 //! to disagree about whether a table is staged at all.
 
-use rdlt_connector::core::{TableSchema, WriteMode};
+use rdlt_connector::core::{commit::WriteMode, schema::TableSchema};
 
 use crate::options::{DestinationOptions, MergeStrategy};
 use crate::plan::{

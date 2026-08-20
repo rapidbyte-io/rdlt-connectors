@@ -15,7 +15,7 @@ use rdlt_connector_file::source::File as FileSource;
 rdlt_connector_sdk::serve_main! {
     about: "rdlt file connector — a protocol server (ADR 0001)",
     roles: {
-        Source => rdlt_connector_sdk::serve::source::source::<FileSource>(),
-        Destination => rdlt_connector_sdk::serve::destination::destination::<FileDestination>(),
+        Source => rdlt_connector_sdk::serve::source::run::<FileSource>(),
+        Destination => rdlt_connector_sdk::serve::destination::run::<FileDestination>(),
     }
 }

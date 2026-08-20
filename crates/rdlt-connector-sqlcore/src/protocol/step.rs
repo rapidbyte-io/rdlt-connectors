@@ -2,7 +2,7 @@
 //! planner emits these; an executor renders each through its dialect seam and
 //! runs it — it may not reorder or re-decide them.
 
-use rdlt_connector::core::TableName;
+use rdlt_connector::core::id::TableName;
 
 use crate::options::Scd2Options;
 

@@ -12,7 +12,8 @@ use rdlt_connector_duckdb::destination as duck;
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 use rdlt_connector_postgres::source;
 use rdlt_connector_sdk::spi::core::failpoint::fail;
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 const TOTAL_ROWS: u64 = 100;
 
@@ -53,10 +54,13 @@ impl Rig {
         }
     }
 
-    async fn attempt(&self, connection_string: &str) -> Result<rdlt_engine::RunReport, String> {
+    async fn attempt(
+        &self,
+        connection_string: &str,
+    ) -> Result<rdlt_connector_sdk::spi::core::report::Run, String> {
         self.attempt_mode(
             connection_string,
-            &rdlt_connector_sdk::spi::core::WriteMode::Append,
+            &rdlt_connector_sdk::spi::core::commit::WriteMode::Append,
         )
         .await
     }
@@ -64,8 +68,8 @@ impl Rig {
     async fn attempt_mode(
         &self,
         connection_string: &str,
-        mode: &rdlt_connector_sdk::spi::core::WriteMode,
-    ) -> Result<rdlt_engine::RunReport, String> {
+        mode: &rdlt_connector_sdk::spi::core::commit::WriteMode,
+    ) -> Result<rdlt_connector_sdk::spi::core::report::Run, String> {
         let config = EngineConfig::new("pg-src-sweep")
             .with_workdir(self.workdir.clone())
             .with_write_mode(mode.clone());
@@ -110,8 +114,8 @@ async fn every_source_fail_point_recovers_exactly_once_under_append_and_merge() 
     // Append + keyed structured Merge: the merge axis drives the
     // keyed delete+insert commit path under every crash point.
     let modes = [
-        rdlt_connector_sdk::spi::core::WriteMode::Append,
-        rdlt_connector_sdk::spi::core::WriteMode::Merge {
+        rdlt_connector_sdk::spi::core::commit::WriteMode::Append,
+        rdlt_connector_sdk::spi::core::commit::WriteMode::Merge {
             key: vec!["id".into()],
         },
     ];

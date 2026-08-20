@@ -9,7 +9,8 @@ use arrow::array::Int64Array;
 use arrow::datatypes::{DataType, Field, Schema};
 use rdlt_connector_file::{destination, source};
 use rdlt_connector_sdk::config::Document;
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 use super::common::{local_dest, plant};
 

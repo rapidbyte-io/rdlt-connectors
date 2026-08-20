@@ -3,10 +3,11 @@
 //! real catalog.
 
 use rdlt_connector_iceberg::destination::Shell;
-use rdlt_connector_sdk::spi::StreamSpec;
-use rdlt_connector_sdk::spi::core::WriteMode;
-use rdlt_engine::{Engine, EngineConfig};
-use rdlt_testkit::{MemoryBatch, MemorySource, MemoryStream};
+use rdlt_connector_sdk::spi::core::commit::WriteMode;
+use rdlt_connector_sdk::spi::source::StreamSpec;
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
+use rdlt_testkit::memory::{Batch as MemoryBatch, Source as MemorySource, Stream as MemoryStream};
 use serde_json::json;
 
 use super::common::{CatalogFixture, minimal_doc};
@@ -153,10 +154,13 @@ async fn a_replayed_commit_publishes_nothing() {
     use std::sync::Arc;
 
     use rdlt_connector_sdk::spi::core::{
-        ColumnDef, ColumnType, LoadId, LogicalType, PipelineId, Provenance, StateDoc, TableName,
-        TableSchema, WriteMode,
+        commit::WriteMode, id::LoadId, id::PipelineId, id::TableName, schema::Column,
+        schema::ColumnType, schema::Provenance, schema::TableSchema, state::StateDoc,
+        types::LogicalType,
     };
-    use rdlt_connector_sdk::spi::{CommitMeta, Destination, OpenContext};
+    use rdlt_connector_sdk::spi::{
+        core::commit::CommitMeta, destination::Destination, destination::OpenContext,
+    };
 
     let Some(fixture) = CatalogFixture::start().await else {
         return;
@@ -167,7 +171,7 @@ async fn a_replayed_commit_publishes_nothing() {
     let schema = TableSchema {
         table: TableName::from("events"),
         parent: None,
-        columns: vec![ColumnDef {
+        columns: vec![Column {
             name: "id".into(),
             column_type: ColumnType::scalar(LogicalType::Int64),
             nullable: false,
@@ -320,9 +324,9 @@ async fn a_committed_loads_receipt_is_found_by_a_fresh_session() {
     use rdlt_connector_iceberg::destination::{Config, Iceberg};
     use rdlt_connector_sdk::config::Document;
     use rdlt_connector_sdk::destination::{Backend, DestinationConnector};
-    use rdlt_connector_sdk::spi::OpenContext;
-    use rdlt_connector_sdk::spi::core::{LoadId, PipelineId};
-    use rdlt_testkit::{batch_of, commit_meta_for, schema_for};
+    use rdlt_connector_sdk::spi::core::{id::LoadId, id::PipelineId};
+    use rdlt_connector_sdk::spi::destination::OpenContext;
+    use rdlt_testkit::fixtures::{batch_of, commit_meta_for, schema_for};
 
     let Some(fixture) = CatalogFixture::start().await else {
         return;
@@ -398,9 +402,9 @@ async fn a_replayed_windows_staged_rows_never_reach_the_next_publish() {
     use rdlt_connector_iceberg::destination::{Config, Iceberg};
     use rdlt_connector_sdk::config::Document;
     use rdlt_connector_sdk::destination::{Backend, DestinationConnector};
-    use rdlt_connector_sdk::spi::OpenContext;
-    use rdlt_connector_sdk::spi::core::{LoadId, PipelineId};
-    use rdlt_testkit::{batch_of, commit_meta_for, schema_for};
+    use rdlt_connector_sdk::spi::core::{id::LoadId, id::PipelineId};
+    use rdlt_connector_sdk::spi::destination::OpenContext;
+    use rdlt_testkit::fixtures::{batch_of, commit_meta_for, schema_for};
 
     let Some(fixture) = CatalogFixture::start().await else {
         return;
@@ -486,9 +490,9 @@ async fn a_partial_publish_converges_through_replay_without_losing_tables() {
     use rdlt_connector_iceberg::destination::{Config, Iceberg};
     use rdlt_connector_sdk::config::Document;
     use rdlt_connector_sdk::destination::{Backend, DestinationConnector};
-    use rdlt_connector_sdk::spi::OpenContext;
-    use rdlt_connector_sdk::spi::core::{LoadId, PipelineId};
-    use rdlt_testkit::{batch_of, commit_meta_for, schema_for};
+    use rdlt_connector_sdk::spi::core::{id::LoadId, id::PipelineId};
+    use rdlt_connector_sdk::spi::destination::OpenContext;
+    use rdlt_testkit::fixtures::{batch_of, commit_meta_for, schema_for};
 
     let Some(fixture) = CatalogFixture::start().await else {
         return;
@@ -583,9 +587,9 @@ async fn a_sibling_scope_re_drive_converges_a_mid_publish_crash_without_duplicat
     use rdlt_connector_iceberg::destination::{Config, Iceberg, testhook};
     use rdlt_connector_sdk::config::Document;
     use rdlt_connector_sdk::destination::{Backend, DestinationConnector};
-    use rdlt_connector_sdk::spi::OpenContext;
-    use rdlt_connector_sdk::spi::core::{LoadId, PipelineId};
-    use rdlt_testkit::{batch_of, commit_meta_for, schema_for};
+    use rdlt_connector_sdk::spi::core::{id::LoadId, id::PipelineId};
+    use rdlt_connector_sdk::spi::destination::OpenContext;
+    use rdlt_testkit::fixtures::{batch_of, commit_meta_for, schema_for};
 
     let Some(fixture) = CatalogFixture::start().await else {
         return;
@@ -678,9 +682,9 @@ async fn the_replay_path_persists_the_state_doc() {
     use rdlt_connector_iceberg::destination::{Config, Iceberg, testhook};
     use rdlt_connector_sdk::config::Document;
     use rdlt_connector_sdk::destination::{Backend, DestinationConnector};
-    use rdlt_connector_sdk::spi::OpenContext;
-    use rdlt_connector_sdk::spi::core::{LoadId, PipelineId};
-    use rdlt_testkit::{batch_of, commit_meta_for, schema_for};
+    use rdlt_connector_sdk::spi::core::{id::LoadId, id::PipelineId};
+    use rdlt_connector_sdk::spi::destination::OpenContext;
+    use rdlt_testkit::fixtures::{batch_of, commit_meta_for, schema_for};
 
     let Some(fixture) = CatalogFixture::start().await else {
         return;

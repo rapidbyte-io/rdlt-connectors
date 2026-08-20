@@ -6,7 +6,7 @@
 //! config/auth/data-shaped failures are `Fatal`. Every message names the
 //! phase and, when one is in play, the table.
 
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 /// Where in the source lifecycle a failure happened — part of every message.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

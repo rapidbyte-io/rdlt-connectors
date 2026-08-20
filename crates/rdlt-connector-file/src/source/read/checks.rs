@@ -3,7 +3,7 @@
 //! readers guard themselves with their own integrity checks (tail
 //! hash, prefix digest) and do not pass through here.
 
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 
 use crate::format::{Codec, GZIP_MAGIC, ZSTD_MAGIC};
 use crate::source::cursor::FileTask;

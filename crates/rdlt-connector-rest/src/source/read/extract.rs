@@ -5,7 +5,7 @@
 //! extraction.)
 
 use bytes::Bytes;
-use rdlt_connector_sdk::spi::SourceError;
+use rdlt_connector_sdk::spi::error::SourceError;
 use serde_json::Value;
 
 use crate::source::select::Selector;

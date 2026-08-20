@@ -9,7 +9,8 @@
 
 use rdlt_connector_duckdb::destination as duck;
 use rdlt_connector_rest::source::Shell;
-use rdlt_engine::{Engine, EngineConfig};
+use rdlt_engine::config::Config as EngineConfig;
+use rdlt_engine::engine::Engine;
 
 fn net_gated() -> bool {
     if std::env::var("RDLT_NET").as_deref() != Ok("1") {

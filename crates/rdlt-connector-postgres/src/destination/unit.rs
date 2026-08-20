@@ -11,8 +11,8 @@
 
 use std::collections::BTreeSet;
 
-use rdlt_connector_sdk::spi::DestinationError;
-use rdlt_connector_sdk::spi::core::{TableName, crash_point};
+use rdlt_connector_sdk::spi::core::{crash_point, id::TableName};
+use rdlt_connector_sdk::spi::error::DestinationError;
 
 use super::errors::{Phase, driver_transient};
 use crate::session::Connection;
