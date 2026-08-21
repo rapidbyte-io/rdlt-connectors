@@ -72,7 +72,8 @@ impl SourceConnector for Rest {
                 }
                 match attempt.previous().last() {
                     Some(previous)
-                        if crate::source::http::origin::same_origin(previous, attempt.url()) => {
+                        if crate::source::http::origin::same_origin(previous, attempt.url()) =>
+                    {
                         attempt.follow()
                     }
                     _ => attempt.error(

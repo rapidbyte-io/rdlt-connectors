@@ -30,13 +30,14 @@ impl Document for Config {
         // the pin undefined. Plain http stays legal: local stubs and
         // intranet APIs are real deployments.
         match reqwest::Url::parse(&self.base_url) {
-            Ok(parsed) if matches!(parsed.scheme(), "http" | "https") && parsed.host_str().is_some() => {}
+            Ok(parsed)
+                if matches!(parsed.scheme(), "http" | "https") && parsed.host_str().is_some() => {}
             _ => {
                 return invalid(
                     "base_url must be an absolute http(s) URL with a host, e.g. \
                      https://api.example.com"
                         .into(),
-                )
+                );
             }
         }
         if self.max_concurrency == 0 {

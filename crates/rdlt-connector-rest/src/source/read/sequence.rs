@@ -401,8 +401,11 @@ mod tests {
     #[test]
     fn next_url_on_the_source_origin_follows() {
         assert_eq!(
-            pin_next_url("https://api.example.com/v1", "https://api.example.com/v1/page2")
-                .expect("same origin follows"),
+            pin_next_url(
+                "https://api.example.com/v1",
+                "https://api.example.com/v1/page2"
+            )
+            .expect("same origin follows"),
             "https://api.example.com/v1/page2"
         );
     }
@@ -413,9 +416,11 @@ mod tests {
     /// the full URL — a query-located api key rides in the URL itself.
     #[test]
     fn next_url_off_the_source_origin_refuses() {
-        let cross_host =
-            pin_next_url("https://api.example.com", "https://evil.example.com/collect")
-                .expect_err("cross host refuses");
+        let cross_host = pin_next_url(
+            "https://api.example.com",
+            "https://evil.example.com/collect",
+        )
+        .expect_err("cross host refuses");
         assert!(cross_host.contains("evil.example.com"), "{cross_host}");
         assert!(cross_host.contains("pinned"), "{cross_host}");
 
