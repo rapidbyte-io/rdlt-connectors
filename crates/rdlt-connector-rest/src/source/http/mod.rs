@@ -6,6 +6,7 @@
 pub(crate) mod classify;
 mod client;
 mod credentials;
+pub(crate) mod origin;
 
 pub use client::Client;
 pub use credentials::Credentials;

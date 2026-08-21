@@ -301,3 +301,76 @@ streams:
     );
     assert_eq!(ids(&read_ok(&yaml, "items").await), vec![1]);
 }
+
+/// Credential pinning: an absolute next-url naming ANOTHER host is
+/// refused typed — every request rides the source's credentials, so a
+/// poisoned response must not be able to aim them elsewhere.
+#[tokio::test]
+async fn next_url_to_another_host_refuses() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/items"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "results": [{"id": 1}],
+            "next": "https://evil.example.com/collect"
+        })))
+        .mount(&server)
+        .await;
+    let yaml = stream_yaml(
+        &server.uri(),
+        "items",
+        "/items",
+        "records_path: results\npagination: {type: next_url, next_url_path: next}",
+    );
+    let error = read_err(&yaml, "items").await;
+    assert!(
+        error.contains("leaves the source origin"),
+        "the refusal must name the pin: {error}"
+    );
+}
+
+/// Credential pinning: a 3xx whose Location leaves the origin refuses
+/// instead of following — custom credential headers and query-located
+/// api keys survive reqwest's default redirect stripping.
+#[tokio::test]
+async fn cross_origin_redirect_refuses() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/items"))
+        .respond_with(
+            ResponseTemplate::new(302).insert_header("Location", "https://evil.example.com/x"),
+        )
+        .mount(&server)
+        .await;
+    let yaml = stream_yaml(&server.uri(), "items", "/items", "");
+    let error = read_err(&yaml, "items").await;
+    // reqwest's redirect-failure Display names the act, not our reason
+    // (the reason sits in the error's source chain); the refusal being
+    // typed and terminal is the pinned behavior.
+    assert!(
+        error.contains("redirect"),
+        "the refusal must name the redirect: {error}"
+    );
+}
+
+/// Same-origin redirects still follow (a trailing-slash or version-path
+/// hop is ordinary API behavior).
+#[tokio::test]
+async fn same_origin_redirect_follows() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/v2/items"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([{"id": 7}])))
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/items"))
+        .respond_with(
+            ResponseTemplate::new(301)
+                .insert_header("Location", &format!("{}/v2/items", server.uri())),
+        )
+        .mount(&server)
+        .await;
+    let yaml = stream_yaml(&server.uri(), "items", "/items", "");
+    assert_eq!(ids(&read_ok(&yaml, "items").await), vec![7]);
+}

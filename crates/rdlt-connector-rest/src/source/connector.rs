@@ -31,7 +31,7 @@ impl SourceConnector for Rest {
     // Reverse-DNS, not bare `rest` (039 T6's id rule, adopted at 042):
     // NAME is the connector id the wire handshake reports and the
     // client verifies by STRICT equality against a
-    // `ConnectorRequirement.id` — and D-039-1 keys discovery on the
+    // `Requirement.id` — and D-039-1 keys discovery on the
     // id's last segment (`io.rapidbyte.rest` → binary
     // `rdlt-connector-rest` on PATH), so the id, the reported identity
     // and the binary name all derive from this one const.
@@ -55,8 +55,32 @@ impl SourceConnector for Rest {
         // total deadline would kill a large page mid-download, and since
         // that failure is transient the engine would restart and hit the
         // same wall on every attempt.
+        //
+        // Redirects are PINNED same-origin. reqwest's default policy
+        // follows up to ten hops anywhere, stripping only the standard
+        // auth headers — but this source also authenticates with custom
+        // header names and query-located api keys, which survive every
+        // redirect by construction. One 3xx to an attacker host would
+        // deliver them, so a hop that changes origin refuses instead;
+        // the hop cap stays at reqwest's own default.
         let http = reqwest::Client::builder()
             .read_timeout(std::time::Duration::from_secs(config.request_timeout_secs))
+            .redirect(reqwest::redirect::Policy::custom(|attempt| {
+                const MAX_REDIRECTS: usize = 10;
+                if attempt.previous().len() >= MAX_REDIRECTS {
+                    return attempt.error("too many redirects");
+                }
+                match attempt.previous().last() {
+                    Some(previous)
+                        if crate::source::http::origin::same_origin(previous, attempt.url()) => {
+                        attempt.follow()
+                    }
+                    _ => attempt.error(
+                        "redirect leaves the request's origin — credentials are pinned \
+                         to the origin the config named",
+                    ),
+                }
+            }))
             .build()
             .map_err(|e| config::ConfigError::Invalid(format!("building the HTTP client: {e}")))?;
         let client = Client::new(

@@ -23,6 +23,22 @@ impl Document for Config {
         if self.streams.is_empty() {
             return invalid("at least one stream is required".into());
         }
+        // The base_url is the PIN every outbound credential-bearing
+        // request answers to (pagination next-urls and redirect hops are
+        // refused past its origin), so it must parse as an absolute URL
+        // with a host — a relative spelling or a bare host would leave
+        // the pin undefined. Plain http stays legal: local stubs and
+        // intranet APIs are real deployments.
+        match reqwest::Url::parse(&self.base_url) {
+            Ok(parsed) if matches!(parsed.scheme(), "http" | "https") && parsed.host_str().is_some() => {}
+            _ => {
+                return invalid(
+                    "base_url must be an absolute http(s) URL with a host, e.g. \
+                     https://api.example.com"
+                        .into(),
+                )
+            }
+        }
         if self.max_concurrency == 0 {
             return invalid("max_concurrency must be at least 1".into());
         }

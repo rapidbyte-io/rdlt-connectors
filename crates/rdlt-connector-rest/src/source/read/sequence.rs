@@ -265,7 +265,9 @@ impl<'a> Sequence<'a> {
             }
             Decision::NextUrl(url) => {
                 let absolute = if url.starts_with("http://") || url.starts_with("https://") {
-                    url
+                    pin_next_url(&self.config.base_url, &url).map_err(|reason| {
+                        SourceError::fatal(format!("stream `{}`: {reason}", self.stream.name))
+                    })?
                 } else {
                     join_base_url(&self.config.base_url, &url)
                 };
@@ -286,6 +288,33 @@ fn join_base_url(base: &str, path: &str) -> String {
         base.trim_end_matches('/'),
         path.trim_start_matches('/')
     )
+}
+
+/// Pin a server-named absolute next-url to the configured origin.
+///
+/// Every request this sequence makes rides the source's credentials, and
+/// a query-located api key rides IN the URL — so an absolute next-url is
+/// the credential's destination, not just a page address. A response
+/// that names another host (a compromised API, a rewritten body field
+/// the operator pointed `next_url_path` at) would deliver the
+/// credential there, and an `http://` spelling under an `https://`
+/// base would hand it to a plaintext hop. Divergence from the base's
+/// origin refuses typed; relative next-urls are joined onto the base
+/// and cannot diverge.
+fn pin_next_url(base_url: &str, next: &str) -> Result<String, String> {
+    let next = reqwest::Url::parse(next)
+        .map_err(|e| format!("pagination next-url does not parse: {e}"))?;
+    let base =
+        reqwest::Url::parse(base_url).map_err(|e| format!("base_url does not parse: {e}"))?;
+    if super::super::http::origin::same_origin(&base, &next) {
+        Ok(next.to_string())
+    } else {
+        Err(format!(
+            "pagination next-url leaves the source origin ({}): credentials are pinned \
+             to the configured base_url, so the host the response named is refused",
+            next.host_str().unwrap_or("<unparsed>")
+        ))
+    }
 }
 
 /// Build one page request. A single `match (method, body)` decides how the
@@ -360,4 +389,43 @@ fn match_action<'a>(
         });
         status_matches && content_matches
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// An absolute next-url on the configured origin follows (relative
+    /// ones join in the caller and never reach this pin; the integration
+    /// suites pin the follow behavior end to end).
+    #[test]
+    fn next_url_on_the_source_origin_follows() {
+        assert_eq!(
+            pin_next_url("https://api.example.com/v1", "https://api.example.com/v1/page2")
+                .expect("same origin follows"),
+            "https://api.example.com/v1/page2"
+        );
+    }
+
+    /// A response naming another host must not aim the credential there,
+    /// and an http spelling under an https base must not hand it to a
+    /// plaintext hop. The refusal names the offending HOST only, never
+    /// the full URL — a query-located api key rides in the URL itself.
+    #[test]
+    fn next_url_off_the_source_origin_refuses() {
+        let cross_host =
+            pin_next_url("https://api.example.com", "https://evil.example.com/collect")
+                .expect_err("cross host refuses");
+        assert!(cross_host.contains("evil.example.com"), "{cross_host}");
+        assert!(cross_host.contains("pinned"), "{cross_host}");
+
+        let downgrade = pin_next_url("https://api.example.com", "http://api.example.com/page2")
+            .expect_err("scheme downgrade refuses");
+        assert!(downgrade.contains("pinned"), "{downgrade}");
+    }
+
+    #[test]
+    fn next_url_that_does_not_parse_refuses() {
+        assert!(pin_next_url("https://api.example.com", "ht tp://broken").is_err());
+    }
 }
