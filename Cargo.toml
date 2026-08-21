@@ -50,13 +50,20 @@ rdlt-connector-snowflake = { path = "crates/rdlt-connector-snowflake", version =
 #
 # Local development against an rdlt checkout goes through an UNCOMMITTED
 # `.cargo/config.toml` patch — see README.md, "The two-checkout dev loop".
-rdlt-connector = { git = "https://github.com/rapidbyte-io/rdlt" }
-rdlt-connector-sdk = { git = "https://github.com/rapidbyte-io/rdlt" }
-rdlt-engine = { git = "https://github.com/rapidbyte-io/rdlt" }
-rdlt-testkit = { git = "https://github.com/rapidbyte-io/rdlt" }
-rdlt-runtime = { git = "https://github.com/rapidbyte-io/rdlt" }
-rdlt-certify = { git = "https://github.com/rapidbyte-io/rdlt" }
-rdlt = { git = "https://github.com/rapidbyte-io/rdlt" }
+#
+# PINNED BY REV, and the revision is not arbitrary: rdlt's main has moved to
+# arrow 59, and duckdb-rs re-exports arrow with every published release
+# requiring ^58, so building these crates against that main fails with
+# "expected duckdb::arrow::array::RecordBatch, found RecordBatch". This is the
+# last rdlt carrying arrow 58. Move the rev and the arrow pins above together,
+# once duckdb-rs publishes against 59.
+rdlt-connector = { git = "https://github.com/rapidbyte-io/rdlt", rev = "37088dd5bfcae8b93db29f1e0404ebc1256adccc" }
+rdlt-connector-sdk = { git = "https://github.com/rapidbyte-io/rdlt", rev = "37088dd5bfcae8b93db29f1e0404ebc1256adccc" }
+rdlt-engine = { git = "https://github.com/rapidbyte-io/rdlt", rev = "37088dd5bfcae8b93db29f1e0404ebc1256adccc" }
+rdlt-testkit = { git = "https://github.com/rapidbyte-io/rdlt", rev = "37088dd5bfcae8b93db29f1e0404ebc1256adccc" }
+rdlt-runtime = { git = "https://github.com/rapidbyte-io/rdlt", rev = "37088dd5bfcae8b93db29f1e0404ebc1256adccc" }
+rdlt-certify = { git = "https://github.com/rapidbyte-io/rdlt", rev = "37088dd5bfcae8b93db29f1e0404ebc1256adccc" }
+rdlt = { git = "https://github.com/rapidbyte-io/rdlt", rev = "37088dd5bfcae8b93db29f1e0404ebc1256adccc" }
 
 # External pins, copied verbatim from rdlt's workspace table (044 seed) for
 # every dependency the member crates use — same majors, same feature lists,
@@ -66,12 +73,12 @@ rdlt = { git = "https://github.com/rapidbyte-io/rdlt" }
 # major that duckdb-rs links — connectors receive `RecordBatch` through the
 # rdlt-connector re-export, so version identity across the workspace is a
 # correctness requirement, not a preference.
-arrow = "58.3"
-arrow-schema = "58.3"
-arrow-array = "58.3"
-arrow-select = "58.3"
-arrow-cast = "58.3"
-parquet = "58.3"
+arrow = "58.4"
+arrow-schema = "58.4"
+arrow-array = "58.4"
+arrow-select = "58.4"
+arrow-cast = "58.4"
+parquet = "58.4"
 
 tokio = { version = "1", features = ["rt-multi-thread", "sync", "time", "fs", "macros", "process"] }
 serde = { version = "1", features = ["derive"] }

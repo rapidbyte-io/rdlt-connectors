@@ -12,7 +12,7 @@
 //! both derive from one const. No container and no credentials anywhere
 //! here: `Spec` is the bin's static identity, before any handshake.
 
-use rdlt_runtime::Role;
+use rdlt_runtime::provider::Role;
 
 use super::support::spawn::built_bin;
 
@@ -23,7 +23,7 @@ use super::support::spawn::built_bin;
 #[tokio::test]
 async fn the_postgres_bin_answers_the_spec_rpc_for_both_roles() {
     for role in [Role::Source, Role::Destination] {
-        rdlt_certify::assert_spec_identity(
+        rdlt_certify::contract::assert_spec_identity(
             &built_bin(),
             role,
             "io.rapidbyte.postgres",
@@ -34,11 +34,11 @@ async fn the_postgres_bin_answers_the_spec_rpc_for_both_roles() {
 }
 
 /// The pinned arg contract, through the shared helper
-/// ([`rdlt_certify::assert_bin_arg_contract`]): no args and a bogus
+/// ([`rdlt_certify::contract::assert_bin_arg_contract`]): no args and a bogus
 /// role are clap's exit 2, each unserved role is refused at the arg
 /// gate, and `--version`/`--help` behave with the crate version in the
 /// output.
 #[test]
 fn the_arg_contract_holds() {
-    rdlt_certify::assert_bin_arg_contract(&built_bin(), &[], env!("CARGO_PKG_VERSION"));
+    rdlt_certify::contract::assert_bin_arg_contract(&built_bin(), &[], env!("CARGO_PKG_VERSION"));
 }

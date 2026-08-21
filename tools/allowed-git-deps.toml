@@ -18,6 +18,14 @@
 # ---------------------------------------------------------------------------
 # The engine-side crates, consumed from the rdlt repository by git while their
 # registry publish wave (owner-scheduled, recorded in rdlt) has not run.
+#
+# ALL SEVEN ARE PINNED TO ONE REVISION, and the revision is not arbitrary.
+# rdlt's main has moved to arrow 59; duckdb-rs re-exports arrow and every
+# published release of it requires ^58, so a connector built against that main
+# fails to compile — `RecordBatch` reaching the duckdb appender is then a
+# different crate version than the one the sdk hands over, and the majors do
+# not unify. This revision is the last rdlt carrying arrow 58. It moves, with
+# the workspace's own arrow pins, once duckdb-rs publishes against 59.
 # ---------------------------------------------------------------------------
 
 [[allow]]
@@ -25,6 +33,7 @@ dependency = "rdlt-connector"
 manifest   = "Cargo.toml"
 table      = "workspace.dependencies"
 git        = "https://github.com/rapidbyte-io/rdlt"
+rev        = "37088dd5bfcae8b93db29f1e0404ebc1256adccc"
 
 reason = """
 The connector SPI. Not yet published to the registry: the engine crates'
@@ -54,6 +63,7 @@ dependency = "rdlt-connector-sdk"
 manifest   = "Cargo.toml"
 table      = "workspace.dependencies"
 git        = "https://github.com/rapidbyte-io/rdlt"
+rev        = "37088dd5bfcae8b93db29f1e0404ebc1256adccc"
 
 reason = """
 The connector-builder framework — every connector's ONE normal rdlt
@@ -81,6 +91,7 @@ dependency = "rdlt-engine"
 manifest   = "Cargo.toml"
 table      = "workspace.dependencies"
 git        = "https://github.com/rapidbyte-io/rdlt"
+rev        = "37088dd5bfcae8b93db29f1e0404ebc1256adccc"
 
 reason = """
 Dev-dependency of the connector suites (engine-driven ingestion cells).
@@ -109,6 +120,7 @@ dependency = "rdlt-testkit"
 manifest   = "Cargo.toml"
 table      = "workspace.dependencies"
 git        = "https://github.com/rapidbyte-io/rdlt"
+rev        = "37088dd5bfcae8b93db29f1e0404ebc1256adccc"
 
 reason = """
 The conformance kits and container fixtures. A dev-dependency everywhere
@@ -138,6 +150,7 @@ dependency = "rdlt-runtime"
 manifest   = "Cargo.toml"
 table      = "workspace.dependencies"
 git        = "https://github.com/rapidbyte-io/rdlt"
+rev        = "37088dd5bfcae8b93db29f1e0404ebc1256adccc"
 
 reason = """
 The spawn suites' dial (dev-dependency only). `publish = false` in rdlt —
@@ -166,6 +179,7 @@ dependency = "rdlt-certify"
 manifest   = "Cargo.toml"
 table      = "workspace.dependencies"
 git        = "https://github.com/rapidbyte-io/rdlt"
+rev        = "37088dd5bfcae8b93db29f1e0404ebc1256adccc"
 
 reason = """
 The certifier — the bar every connector here answers to (dev-dependency
@@ -195,6 +209,7 @@ dependency = "rdlt"
 manifest   = "Cargo.toml"
 table      = "workspace.dependencies"
 git        = "https://github.com/rapidbyte-io/rdlt"
+rev        = "37088dd5bfcae8b93db29f1e0404ebc1256adccc"
 
 reason = """
 The facade, dev-dependency of the workspace-level examples gate alone: the

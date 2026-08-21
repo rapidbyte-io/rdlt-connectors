@@ -17,7 +17,10 @@
 //! construction while this test holds the handle. No container
 //! runtime anywhere: this cell never skips.
 
-use rdlt_certify::{Target, assert_certified_all_pass, certify_source};
+use rdlt_certify::{
+    clause::s::certify as certify_source, report::assert_all_pass as assert_certified_all_pass,
+    target::Target,
+};
 use serde_json::json;
 use wiremock::matchers::{method, path, query_param, query_param_is_missing};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -140,6 +143,7 @@ async fn the_rest_source_certifies_all_pass() {
         assert_certified_all_pass(
             &report,
             &["S1", "S2", "S4", "P1", "P2", "P3", "P4", "P5", "P6", "P7"],
+            &[],
         );
     }
 }

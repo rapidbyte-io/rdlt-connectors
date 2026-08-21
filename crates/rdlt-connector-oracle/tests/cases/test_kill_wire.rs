@@ -21,7 +21,10 @@
 //! is what makes an under-sized fixture a FAILURE of this cell rather
 //! than a quiet narrowing of the matrix.
 
-use rdlt_certify::{Target, assert_all_pass_in_order_with_skip_advice, kill_matrix_source};
+use rdlt_certify::{
+    clause::k::source as kill_matrix_source,
+    report::assert_in_order as assert_all_pass_in_order_with_skip_advice, target::Target,
+};
 use serde_json::json;
 
 use super::common::{APP_USER, OracleFixture, PASSWORD};
@@ -78,7 +81,9 @@ async fn the_source_kill_matrix_passes_at_every_boundary() {
     assert_all_pass_in_order_with_skip_advice(
         &entries,
         &["K-S1", "K-S2", "K-S3"],
-        "the large fixture must keep the read in flight at the SIGKILL, and a Skip here \
-         means it no longer does (enlarge `k_rows` past the kit's read window)",
+        Some(
+            "the large fixture must keep the read in flight at the SIGKILL, and a Skip here \
+             means it no longer does (enlarge `k_rows` past the kit's read window)",
+        ),
     );
 }

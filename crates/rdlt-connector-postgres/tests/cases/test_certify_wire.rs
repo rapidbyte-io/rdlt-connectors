@@ -20,8 +20,9 @@
 //! suite in this crate.
 
 use rdlt_certify::{
-    DESTINATION_DUAL_ROLE_SKIP, SOURCE_DUAL_ROLE_SKIP, Target,
-    assert_certified_all_pass_with_named_skips, certify_destination, certify_source,
+    clause::d::certify as certify_destination, clause::p::DESTINATION_DUAL_ROLE_SKIP,
+    clause::p::SOURCE_DUAL_ROLE_SKIP, clause::s::certify as certify_source,
+    report::assert_all_pass as assert_certified_all_pass_with_named_skips, target::Target,
 };
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 use serde_json::json;

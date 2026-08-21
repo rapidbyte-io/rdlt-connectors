@@ -18,7 +18,10 @@
 //! convergence spawn included) before the next arm opens the same
 //! file.
 
-use rdlt_certify::{Target, assert_all_pass_in_order, kill_matrix_destination};
+use rdlt_certify::{
+    clause::k::destination as kill_matrix_destination,
+    report::assert_in_order as assert_all_pass_in_order, target::Target,
+};
 use serde_json::json;
 
 use super::support::probe::SnapshotCount;
@@ -37,5 +40,9 @@ async fn the_destination_kill_matrix_passes_at_every_boundary() {
     let entries =
         kill_matrix_destination(&Target::resolve_path(built_bin(), config), Some(&probe)).await;
 
-    assert_all_pass_in_order(&entries, &["K-D1", "K-D2", "K-D3", "K-D4", "K-D5", "K-D6"]);
+    assert_all_pass_in_order(
+        &entries,
+        &["K-D1", "K-D2", "K-D3", "K-D4", "K-D5", "K-D6"],
+        None,
+    );
 }

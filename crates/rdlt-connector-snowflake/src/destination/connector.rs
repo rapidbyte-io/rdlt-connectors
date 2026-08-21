@@ -45,7 +45,7 @@ pub struct Snowflake {
 impl DestinationConnector for Snowflake {
     // Reverse-DNS, not bare `snowflake` (039 T6): NAME is the connector
     // id the wire handshake reports and the client verifies by STRICT
-    // equality against a `ConnectorRequirement.id` — and D-039-1 keys
+    // equality against a `Requirement.id` — and D-039-1 keys
     // discovery on the id's last segment (`io.rapidbyte.snowflake` →
     // binary `rdlt-connector-snowflake` on PATH).
     const NAME: &'static str = "io.rapidbyte.snowflake";

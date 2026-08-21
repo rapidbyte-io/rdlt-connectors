@@ -30,10 +30,11 @@
 
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 use rdlt_connector_sdk::spi::{
-    RecordsIn, arrow::RecordBatch, channel::PushPayload, channel::records, core::cursor::Cursor,
-    source::ReadRequest, source::Source, source::StreamSpec,
+    arrow::RecordBatch, channel::PushPayload, channel::RecordsIn, channel::records,
+    core::cursor::Cursor, source::ReadRequest, source::Source, source::StreamSpec,
 };
-use rdlt_runtime::{ConnectorProvider, ConnectorRequirement, LocalBinaryConnectorProvider};
+use rdlt_runtime::local::Local;
+use rdlt_runtime::provider::{Provider, Requirement};
 
 use super::support::spawn::built_bin;
 
@@ -42,7 +43,7 @@ use super::support::spawn::built_bin;
 /// managed source is borrowed), returning every Arrow batch and every
 /// checkpoint cursor in push order.
 async fn read_all(
-    source: &rdlt_runtime::ManagedSource,
+    source: &rdlt_runtime::provider::ManagedSource,
     stream: &StreamSpec,
     since: Option<Cursor>,
 ) -> (Vec<RecordBatch>, Vec<Cursor>) {
@@ -136,8 +137,8 @@ async fn cdc_crosses_the_wire_and_state_rides_the_checkpoint_cursor() {
     };
 
     let bin = built_bin();
-    let provider = LocalBinaryConnectorProvider::new();
-    let requirement = ConnectorRequirement::new("io.rapidbyte.postgres").with_path(&bin);
+    let provider = Local::new();
+    let requirement = Requirement::new("io.rapidbyte.postgres").with_path(&bin);
     // The minimal `cdc:` document, the in-process rig's exact shape
     // (`cdc_rig.rs`: slot s1, publication p1, create_if_missing) as the
     // JSON the handshake carries.

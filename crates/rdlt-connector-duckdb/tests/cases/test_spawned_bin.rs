@@ -19,9 +19,10 @@
 //! embedder sees a typed terminal error carrying duckdb's own lock
 //! diagnosis, never an infinite retry.
 
+use rdlt_runtime::provider::Classification;
 use rdlt_runtime::{
-    Classification, ClientError, ConnectorProvider, ConnectorRequirement,
-    LocalBinaryConnectorProvider, ProviderError, Role,
+    local::Local, provider::ClientError, provider::Error as ProviderError, provider::Provider,
+    provider::Requirement, provider::Role,
 };
 use serde_json::json;
 
@@ -33,7 +34,7 @@ use super::support::spawn::built_bin;
 /// reverse-DNS id — the one `NAME` const, exact.
 #[tokio::test]
 async fn the_duckdb_bin_answers_the_spec_rpc() {
-    rdlt_certify::assert_spec_identity(
+    rdlt_certify::contract::assert_spec_identity(
         &built_bin(),
         Role::Destination,
         "io.rapidbyte.duckdb",
@@ -56,8 +57,8 @@ async fn a_second_spawned_connector_on_a_held_file_is_refused_fatal() {
     let bin = built_bin();
     let dir = tempfile::tempdir().expect("dir");
     let config = json!({ "path": dir.path().join("held.duckdb") });
-    let provider = LocalBinaryConnectorProvider::new();
-    let requirement = ConnectorRequirement::new("io.rapidbyte.duckdb").with_path(&bin);
+    let provider = Local::new();
+    let requirement = Requirement::new("io.rapidbyte.duckdb").with_path(&bin);
 
     let first = provider
         .destination(&requirement, &config)
@@ -90,11 +91,15 @@ async fn a_second_spawned_connector_on_a_held_file_is_refused_fatal() {
 }
 
 /// The pinned arg contract, through the shared helper
-/// ([`rdlt_certify::assert_bin_arg_contract`]): no args and a bogus
+/// ([`rdlt_certify::contract::assert_bin_arg_contract`]): no args and a bogus
 /// role are clap's exit 2, each unserved role is refused at the arg
 /// gate, and `--version`/`--help` behave with the crate version in the
 /// output.
 #[test]
 fn the_arg_contract_holds() {
-    rdlt_certify::assert_bin_arg_contract(&built_bin(), &["source"], env!("CARGO_PKG_VERSION"));
+    rdlt_certify::contract::assert_bin_arg_contract(
+        &built_bin(),
+        &["source"],
+        env!("CARGO_PKG_VERSION"),
+    );
 }

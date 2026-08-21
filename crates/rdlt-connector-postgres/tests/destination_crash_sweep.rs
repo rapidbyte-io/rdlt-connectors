@@ -197,6 +197,12 @@ struct KeyedArrowSource;
 
 #[async_trait]
 impl Source for KeyedArrowSource {
+    /// In-memory: the rows are already here, so there is nothing to
+    /// reach and nothing that could be misconfigured. Ok is the honest
+    /// answer for this double, not a stub.
+    async fn check(&self) -> Result<(), SourceError> {
+        Ok(())
+    }
     fn spec(&self) -> ConnectorSpec {
         ConnectorSpec::new("keyed-arrow-sweep", "0.0.0")
     }
@@ -360,6 +366,12 @@ struct RefinedArrowSource;
 
 #[async_trait]
 impl Source for RefinedArrowSource {
+    /// In-memory: the rows are already here, so there is nothing to
+    /// reach and nothing that could be misconfigured. Ok is the honest
+    /// answer for this double, not a stub.
+    async fn check(&self) -> Result<(), SourceError> {
+        Ok(())
+    }
     fn spec(&self) -> ConnectorSpec {
         ConnectorSpec::new("refined-arrow-sweep", "0.0.0")
     }

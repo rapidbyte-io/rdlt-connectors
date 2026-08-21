@@ -20,7 +20,10 @@
 //! in between — two live processes on one single-writer file cannot
 //! coexist, which this cell is what proved.
 
-use rdlt_certify::{Target, assert_certified_all_pass, certify_destination};
+use rdlt_certify::{
+    clause::d::certify as certify_destination,
+    report::assert_all_pass as assert_certified_all_pass, target::Target,
+};
 use serde_json::json;
 
 use super::support::probe::SnapshotCount;
@@ -48,5 +51,6 @@ async fn the_duckdb_destination_certifies_all_pass_with_d8_live() {
             "D1", "D2", "D3", "D4", "D5", "D6", "D8", "P1", "P2", "P3", "P4", "P7", "P8", "P9",
             "P10", "P11", "P12",
         ],
+        &[],
     );
 }

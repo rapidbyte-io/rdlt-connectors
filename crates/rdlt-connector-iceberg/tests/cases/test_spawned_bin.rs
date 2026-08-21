@@ -14,7 +14,7 @@
 //! `Spec` answers before any catalog is dialed, so no fixture and no
 //! skip surface.
 
-use rdlt_runtime::Role;
+use rdlt_runtime::provider::Role;
 
 use super::support::spawn::built_bin;
 
@@ -24,7 +24,7 @@ use super::support::spawn::built_bin;
 /// reverse-DNS id — the one `NAME` const, exact.
 #[tokio::test]
 async fn the_iceberg_bin_answers_the_spec_rpc() {
-    rdlt_certify::assert_spec_identity(
+    rdlt_certify::contract::assert_spec_identity(
         &built_bin(),
         Role::Destination,
         "io.rapidbyte.iceberg",
@@ -34,11 +34,15 @@ async fn the_iceberg_bin_answers_the_spec_rpc() {
 }
 
 /// The pinned arg contract, through the shared helper
-/// ([`rdlt_certify::assert_bin_arg_contract`]): no args and a bogus
+/// ([`rdlt_certify::contract::assert_bin_arg_contract`]): no args and a bogus
 /// role are clap's exit 2, each unserved role is refused at the arg
 /// gate, and `--version`/`--help` behave with the crate version in the
 /// output.
 #[test]
 fn the_arg_contract_holds() {
-    rdlt_certify::assert_bin_arg_contract(&built_bin(), &["source"], env!("CARGO_PKG_VERSION"));
+    rdlt_certify::contract::assert_bin_arg_contract(
+        &built_bin(),
+        &["source"],
+        env!("CARGO_PKG_VERSION"),
+    );
 }

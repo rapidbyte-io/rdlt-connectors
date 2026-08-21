@@ -14,7 +14,8 @@
 //! iceberg cell rides.
 
 use rdlt_certify::{
-    NO_MERGE_SKIP, Target, assert_certified_all_pass_with_named_skips, certify_destination,
+    clause::d::NO_MERGE_SKIP, clause::d::certify as certify_destination,
+    report::assert_all_pass as assert_certified_all_pass_with_named_skips, target::Target,
 };
 
 use super::common::{CatalogFixture, LiveProbe};

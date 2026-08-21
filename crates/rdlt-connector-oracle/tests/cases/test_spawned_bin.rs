@@ -26,7 +26,7 @@
 //! cells sit BEFORE the probe in the bin and run everywhere.
 
 use rdlt_connector_oracle::source::client_available;
-use rdlt_runtime::Role;
+use rdlt_runtime::provider::Role;
 
 use super::support::spawn::built_bin;
 
@@ -55,7 +55,7 @@ async fn with_a_client_the_bin_answers_the_spec_rpc_for_the_source_role() {
         );
         return;
     }
-    rdlt_certify::assert_spec_identity(
+    rdlt_certify::contract::assert_spec_identity(
         &built_bin(),
         Role::Source,
         "io.rapidbyte.oracle",
@@ -100,13 +100,13 @@ fn without_a_client_the_bin_refuses_before_the_handshake() {
 }
 
 /// The pinned arg contract, through the shared helper
-/// ([`rdlt_certify::assert_bin_arg_contract`]): no args and a bogus
+/// ([`rdlt_certify::contract::assert_bin_arg_contract`]): no args and a bogus
 /// role are clap's exit 2, each unserved role is refused at the arg
 /// gate, and `--version`/`--help` behave with the crate version in the
 /// output.
 #[test]
 fn the_arg_contract_holds() {
-    rdlt_certify::assert_bin_arg_contract(
+    rdlt_certify::contract::assert_bin_arg_contract(
         &built_bin(),
         &["destination"],
         env!("CARGO_PKG_VERSION"),

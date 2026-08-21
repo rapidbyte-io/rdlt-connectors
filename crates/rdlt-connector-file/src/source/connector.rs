@@ -53,7 +53,7 @@ impl File {
 impl SourceConnector for File {
     // Reverse-DNS, not bare `file` (039 T6): NAME is the connector id
     // the wire handshake reports and the client verifies by STRICT
-    // equality against a `ConnectorRequirement.id` — and D-039-1 keys
+    // equality against a `Requirement.id` — and D-039-1 keys
     // discovery on the id's last segment (`io.rapidbyte.file` → binary
     // `rdlt-connector-file` on PATH), so the id, the reported identity
     // and the binary name all derive from this one const.

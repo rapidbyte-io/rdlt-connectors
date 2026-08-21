@@ -15,7 +15,10 @@
 //! `test_spawned_bin.rs`). Each reason prints its own line, so a
 //! skipped machine says WHICH prerequisite it is missing.
 
-use rdlt_certify::{Target, assert_certified_all_pass, certify_source};
+use rdlt_certify::{
+    clause::s::certify as certify_source, report::assert_all_pass as assert_certified_all_pass,
+    target::Target,
+};
 use serde_json::json;
 
 use super::common::{APP_USER, OracleFixture, PASSWORD};
@@ -95,6 +98,7 @@ async fn the_oracle_source_certifies_all_pass() {
         assert_certified_all_pass(
             &report,
             &["S1", "S2", "S4", "P1", "P2", "P3", "P4", "P5", "P6", "P7"],
+            &[],
         );
     }
 }

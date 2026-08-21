@@ -11,7 +11,10 @@
 //! the skip and the cell returns — the 015 convention every live
 //! iceberg cell rides.
 
-use rdlt_certify::{Target, assert_all_pass_in_order, kill_matrix_destination};
+use rdlt_certify::{
+    clause::k::destination as kill_matrix_destination,
+    report::assert_in_order as assert_all_pass_in_order, target::Target,
+};
 
 use super::common::{CatalogFixture, LiveProbe};
 use super::support::spawn::built_bin;
@@ -34,7 +37,11 @@ async fn the_destination_kill_matrix_passes_at_every_boundary() {
     let entries =
         kill_matrix_destination(&Target::resolve_path(built_bin(), config), Some(&probe)).await;
 
-    assert_all_pass_in_order(&entries, &["K-D1", "K-D2", "K-D3", "K-D4", "K-D5", "K-D6"]);
+    assert_all_pass_in_order(
+        &entries,
+        &["K-D1", "K-D2", "K-D3", "K-D4", "K-D5", "K-D6"],
+        None,
+    );
 }
 
 /// ROUND-13 ACCEPTANCE (certify load-id entropy): the kill matrix runs
@@ -64,7 +71,11 @@ async fn re_certifying_the_same_warehouse_does_real_work_both_times() {
             Some(&probe),
         )
         .await;
-        assert_all_pass_in_order(&entries, &["K-D1", "K-D2", "K-D3", "K-D4", "K-D5", "K-D6"]);
+        assert_all_pass_in_order(
+            &entries,
+            &["K-D1", "K-D2", "K-D3", "K-D4", "K-D5", "K-D6"],
+            None,
+        );
         tables_after.push(probe.fixture.tables_in(namespace).await.len());
     }
     // The real-work oracle: fresh per-invocation identities land in

@@ -125,7 +125,7 @@ impl SourceConnector for Postgres {
     // Reverse-DNS, not bare `postgres` (039 T6's id rule, adopted at
     // 041): NAME is the connector id the wire handshake reports and the
     // client verifies by STRICT equality against a
-    // `ConnectorRequirement.id` — and D-039-1 keys discovery on the
+    // `Requirement.id` — and D-039-1 keys discovery on the
     // id's last segment (`io.rapidbyte.postgres` → binary
     // `rdlt-connector-postgres` on PATH), so the id, the reported
     // identity and the binary name all derive from this one const.

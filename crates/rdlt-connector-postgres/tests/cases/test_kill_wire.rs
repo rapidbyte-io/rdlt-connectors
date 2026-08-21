@@ -33,7 +33,8 @@
 //! suite in this crate.
 
 use rdlt_certify::{
-    Target, assert_all_pass_in_order_with_skip_advice, kill_matrix_destination, kill_matrix_source,
+    clause::k::destination as kill_matrix_destination, clause::k::source as kill_matrix_source,
+    report::assert_in_order as assert_all_pass_in_order_with_skip_advice, target::Target,
 };
 use rdlt_connector_postgres::fixtures::PostgresContainer;
 use serde_json::json;
@@ -86,8 +87,10 @@ async fn the_source_kill_matrix_passes_at_every_boundary() {
     assert_all_pass_in_order_with_skip_advice(
         &entries,
         &["K-S1", "K-S2", "K-S3"],
-        "the large fixture must keep the read in flight at the SIGKILL, and a Skip here \
-         means it no longer does (enlarge `k_rows` past the kit's read window)",
+        Some(
+            "the large fixture must keep the read in flight at the SIGKILL, and a Skip here \
+             means it no longer does (enlarge `k_rows` past the kit's read window)",
+        ),
     );
 }
 
@@ -150,7 +153,9 @@ async fn the_destination_kill_matrix_passes_at_every_boundary() {
     assert_all_pass_in_order_with_skip_advice(
         &entries,
         &["K-D1", "K-D2", "K-D3", "K-D4", "K-D5", "K-D6"],
-        "a probe was supplied and the boundaries are all reachable on this destination, so \
-         no destination arm has a legitimate Skip",
+        Some(
+            "a probe was supplied and the boundaries are all reachable on this destination, \
+             so no destination arm has a legitimate Skip",
+        ),
     );
 }
